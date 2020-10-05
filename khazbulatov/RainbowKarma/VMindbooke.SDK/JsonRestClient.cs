@@ -17,8 +17,11 @@ namespace VMindbooke.SDK
                 JsonConvert.SerializeObject(body), ParameterType.RequestBody);
             if (headers != null) request.AddHeaders(headers);
             if (queryParams != null)
+            {
                 foreach (KeyValuePair<string, string> param in queryParams)
-                    request.AddQueryParameter(param.Key, param.Value);
+                    if (param.Value != null)
+                        request.AddQueryParameter(param.Key, param.Value);
+            }
             return _restClient.Execute(request);
         }
 

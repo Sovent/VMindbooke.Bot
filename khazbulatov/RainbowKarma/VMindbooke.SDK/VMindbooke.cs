@@ -9,16 +9,11 @@ namespace VMindbooke.SDK
     {
         private JsonRestClient _jsonRestClient;
 
-        private static ICollection<KeyValuePair<string, string>> GetAuthHeaders(Credentials credentials) =>
-            new[] { new KeyValuePair<string, string>("Authorization", credentials.Token) };
+        private static IDictionary<string, string> GetAuthHeaders(Credentials credentials) =>
+            new Dictionary<string, string> {["Authorization"] = credentials.Token};
 
-        private static ICollection<KeyValuePair<string, string>> GetPaginationParams(int? skip, int? take)
-        {
-            IDictionary<string, string> queryParams = new Dictionary<string, string>();
-            if (skip.HasValue) queryParams["skip"] = skip.Value.ToString();
-            if (take.HasValue) queryParams["take"] = take.Value.ToString();
-            return queryParams;
-        }
+        private static IDictionary<string, string> GetPaginationParams(int? skip, int? take) => 
+            new Dictionary<string, string> {["skip"] = skip?.ToString(), ["take"] = take?.ToString()};
 
         public VMindbooke(string baseUrl) => 
             _jsonRestClient = new JsonRestClient(baseUrl);
