@@ -8,18 +8,24 @@ namespace VMindbooke.SDK
     {
         private readonly RestClient _restClient;
         
-        private IRestResponse SendRequest<TBody>(Method method, string resource,
-            TBody body, ICollection<KeyValuePair<string, string>> headers = null)
+        private IRestResponse SendRequest<TBody>(Method method, string resource, TBody body,
+            ICollection<KeyValuePair<string, string>> queryParams = null,
+            ICollection<KeyValuePair<string, string>> headers = null)
         {
             RestRequest request = new RestRequest(resource, method);
-            if (body != null) request.AddJsonBody(JsonConvert.SerializeObject(body));
+            if (body != null) request.AddParameter("application/json",
+                JsonConvert.SerializeObject(body), ParameterType.RequestBody);
             if (headers != null) request.AddHeaders(headers);
+            if (queryParams != null)
+                foreach (KeyValuePair<string, string> param in queryParams)
+                    request.AddQueryParameter(param.Key, param.Value);
             return _restClient.Execute(request);
         }
 
         private IRestResponse SendRequest(Method method, string resource,
+            ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null) =>
-            SendRequest<object>(method, resource, null, headers);
+            SendRequest<object>(method, resource, null, queryParams, headers);
 
         private TResult ParseResponse<TResult>(IRestResponse response) =>
             JsonConvert.DeserializeObject<TResult>(response.Content);
@@ -29,20 +35,24 @@ namespace VMindbooke.SDK
             _restClient = new RestClient(baseUrl);
         }
 
-        public void MakeJsonRequest(Method method, string resource,
+        public void MakeRequest(Method method, string resource,
+            ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null) =>
-            SendRequest(method, resource, headers);
+            SendRequest(method, resource, queryParams, headers);
 
-        public void MakeJsonRequest<TBody>(Method method, string resource,
-            TBody body, ICollection<KeyValuePair<string, string>> headers = null) =>
-            SendRequest<TBody>(method, resource, body, headers);
-
-        public TResult MakeJsonRequest<TResult>(Method method, string resource,
+        public void MakeRequest<TBody>(Method method, string resource, TBody body,
+            ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null) =>
-            ParseResponse<TResult>(SendRequest(method, resource, headers));
+            SendRequest<TBody>(method, resource, body, queryParams, headers);
 
-        public TResult MakeJsonRequest<TResult, TBody>(Method method, string resource,
-            TBody body, ICollection<KeyValuePair<string, string>> headers = null) =>
-            ParseResponse<TResult>(SendRequest<TBody>(method, resource, body, headers));
+        public TResult MakeRequest<TResult>(Method method, string resource,
+            ICollection<KeyValuePair<string, string>> queryParams = null,
+            ICollection<KeyValuePair<string, string>> headers = null) =>
+            ParseResponse<TResult>(SendRequest(method, resource, queryParams, headers));
+
+        public TResult MakeRequest<TResult, TBody>(Method method, string resource, TBody body,
+            ICollection<KeyValuePair<string, string>> queryParams = null,
+            ICollection<KeyValuePair<string, string>> headers = null) =>
+            ParseResponse<TResult>(SendRequest<TBody>(method, resource, body, queryParams, headers));
     }
 }
