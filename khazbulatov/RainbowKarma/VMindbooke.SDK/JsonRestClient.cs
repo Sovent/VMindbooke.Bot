@@ -19,8 +19,7 @@ namespace VMindbooke.SDK
             if (queryParams != null)
             {
                 foreach (KeyValuePair<string, string> param in queryParams)
-                    if (param.Value != null)
-                        request.AddQueryParameter(param.Key, param.Value);
+                    if (param.Value != null) request.AddQueryParameter(param.Key, param.Value);
             }
             return _restClient.Execute(request);
         }
