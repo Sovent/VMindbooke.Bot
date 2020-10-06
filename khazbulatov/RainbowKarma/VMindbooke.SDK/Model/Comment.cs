@@ -5,7 +5,7 @@ namespace VMindbooke.SDK.Model
 {
     public class Comment
     {
-        public int Id { get; }
+        public Guid Id { get; }
         public int AuthorId { get; }
         public string Title { get; }
         public string Content { get; }
@@ -13,7 +13,7 @@ namespace VMindbooke.SDK.Model
         public IEnumerable<Like> Likes { get; }
         public IEnumerable<Comment> Replies { get; }
 
-        public Comment(int id, int authorId, string title, string content,
+        public Comment(Guid id, int authorId, string title, string content,
             DateTime postingDateUtc, IEnumerable<Like> likes, IEnumerable<Comment> comments)
         {
             Id = id;
