@@ -7,7 +7,7 @@ using Serilog;
 using Serilog.Events;
 using VmindbookeSDK;
 
-namespace Lesson4
+namespace ShitBot
 {
     class Program
     {
@@ -58,6 +58,8 @@ namespace Lesson4
                .WriteTo.Console()
                .CreateLogger();
            logger.Error("dfghjk");
+           
+           Console.WriteLine("keks");
 
         }
     }
