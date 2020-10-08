@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using VMindbooke.SDK;
 using VMindbooke.SDK.Model;
 
@@ -19,12 +18,15 @@ namespace VMindbooke.RainbowKarma
         }
 
         public void Comment(Post post) =>
-            _vMindbooke.CreateComment(_credentials, post.Id, new NewComment(Keki.GetCleverComment()));
+            _vMindbooke.CreateComment(_credentials, post.Id,
+                new NewComment(Keki.GetCleverComment(post.Content)));
 
         public void Reply(Post post, Comment comment) =>
-            _vMindbooke.CreateReply(_credentials, post.Id, comment.Id, new NewComment(Keki.GetCleverReply()));
+            _vMindbooke.CreateReply(_credentials, post.Id, comment.Id,
+                new NewComment(Keki.GetCleverReply(comment.Content)));
 
         public void Repost(Post post) =>
-            _vMindbooke.CreatePost(_credentials, _credentials.Id, new NewPost(Keki.GetCleverTitle(), post.Content));
+            _vMindbooke.CreatePost(_credentials, _credentials.Id,
+                new NewPost(Keki.GetCleverTitle(post.Title), post.Content));
     }
 }
