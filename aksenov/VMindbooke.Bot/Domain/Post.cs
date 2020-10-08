@@ -5,6 +5,17 @@ namespace VMindbooke.Bot.Domain
 {
     public class Post
     {
+        public Post(int id, int authorId, string title, string content, DateTime postingDateUtc, Comment[] comments, Like[] likes)
+        {
+            Id = id;
+            AuthorId = authorId;
+            Title = title;
+            Content = content;
+            PostingDateUtc = postingDateUtc;
+            Comments = comments;
+            Likes = likes;
+        }
+        
         public int Id { get; }
 
         public int AuthorId { get; }
@@ -13,10 +24,10 @@ namespace VMindbooke.Bot.Domain
 
         public string Content { get; }
 
-        public DateTime PostingDate { get; }
+        public DateTime PostingDateUtc { get; }
 
-        public IEnumerable<Comment> Comments { get; }
+        public Comment[] Comments { get; }
 
-        public IEnumerable<Like> Likes { get; }
+        public Like[] Likes { get; }
     }
 }

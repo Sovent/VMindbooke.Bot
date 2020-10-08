@@ -6,9 +6,11 @@ namespace VMindbooke.Bot
 {
     public class BotSettings
     {
-        public BotSettings(string serverAddress, int likeLimitForPostToMakeComment, int likeLimitForCommentToMakeReply, int likeLimitForPostToCopy, int likeLimitForUserToCopyPost, int likeLimitToCompleteProcess, DateTime likePeriodFrom, DateTime likePeriodTo)
+        public BotSettings(string serverAddress, string userToken, int userId, int likeLimitForPostToMakeComment, int likeLimitForCommentToMakeReply, int likeLimitForPostToCopy, int likeLimitForUserToCopyPost, int likeLimitToCompleteProcess, DateTime likePeriodFrom, DateTime likePeriodTo)
         {
             ServerAddress = serverAddress;
+            UserToken = userToken;
+            UserId = userId;
             LikeLimitForPostToMakeComment = likeLimitForPostToMakeComment;
             LikeLimitForCommentToMakeReply = likeLimitForCommentToMakeReply;
             LikeLimitForPostToCopy = likeLimitForPostToCopy;
@@ -28,6 +30,10 @@ namespace VMindbooke.Bot
         }
 
         public string ServerAddress { get; }    
+        
+        public string UserToken { get; }
+        
+        public int UserId { get; }
 
         public int LikeLimitForPostToMakeComment { get; }
 
