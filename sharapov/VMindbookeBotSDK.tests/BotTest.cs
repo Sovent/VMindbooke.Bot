@@ -14,7 +14,7 @@ namespace VMindbookeBotSDK.tests
             //arrange
 
             //act
-            var bot = Bot.Create("TestUserName");
+            var bot = HttpRequester.Create("TestUserName");
 
             //assert
         }
@@ -22,11 +22,11 @@ namespace VMindbookeBotSDK.tests
         [Test]
         public void NotTest1()
         {
-            var bot = new Bot( "31d026e268e640c48963bef6d07785ed");
+            // var bot = new HttpRequester( "31d026e268e640c48963bef6d07785ed");
             // var likes = bot.GetPostLikes(14);
             // var code = bot.WriteComment(16, "Title From Ide", "Content From Ide");
             // var code = bot.WriteReply(16, "c2bda9c5-d20f-4ce5-8dfa-e518f9d3ae8c", "Reply From Ide");
-            var code = bot.WritePost(16, "c2bda9c5-d20f-4ce5-8dfa-e518f9d3ae8c", "Reply From Ide");
+            // var code = bot.WriteNewPost(16, "c2bda9c5-d20f-4ce5-8dfa-e518f9d3ae8c", "Reply From Ide");
             
         }
     }

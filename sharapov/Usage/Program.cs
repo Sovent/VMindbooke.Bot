@@ -20,9 +20,9 @@ namespace Usage
                 case "write_reply":
                     compositionRoot.BotService.WriteReply(16);
                     break;
-                // case "copy_post_content":
-                //     compositionRoot.BotService.Reply();
-                //     break;
+                case "copy_post_content":
+                    compositionRoot.BotService.CopyPost(16);
+                    break;
                 // case "copy_most_liked_post":
                 //     compositionRoot.BotService.Reply();
                 //     break;

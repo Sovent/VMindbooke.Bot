@@ -3,6 +3,6 @@
     public interface IWordsGenerator
     {
         string GetTitle();
-        string GetText();
+        string GetContent();
     }
 }
