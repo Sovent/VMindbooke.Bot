@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Channels;
 using Newtonsoft.Json;
 using Polly;
 using Polly.Retry;
 using RestSharp;
+using Serilog.Core;
 using VMindbooke.Bot.Domain;
 
 namespace VMindbooke.Bot.Application
@@ -14,10 +14,12 @@ namespace VMindbooke.Bot.Application
         private RestClient _restClient;
         private RetryPolicy<IRestResponse> _retryPolicy;
         private readonly BotSettings _settings;
+        private readonly Logger _logger;
 
-        public APIRequestsService(BotSettings settings)
+        public APIRequestsService(BotSettings settings, Logger logger)
         {
             _settings = settings;
+            _logger = logger;
             Initialize();
         }
 
@@ -36,7 +38,7 @@ namespace VMindbooke.Bot.Application
                 });
         }
         
-        public IEnumerable<Post> GetPosts()
+        private IEnumerable<Post> TryGetPosts()
         {
             var resource = "posts";
             var request = new RestRequest(resource, Method.GET);
@@ -44,8 +46,8 @@ namespace VMindbooke.Bot.Application
             var content = JsonConvert.DeserializeObject<Post[]>(response.Content);
             return content;
         }
-        
-        public IEnumerable<User> GetUsers()
+
+        private IEnumerable<User> TryGetUsers()
         {
             var resource = "users";
             var request = new RestRequest(resource, Method.GET);
@@ -53,8 +55,8 @@ namespace VMindbooke.Bot.Application
             var content = JsonConvert.DeserializeObject<User[]>(response.Content);
             return content;
         }
-        
-        public IEnumerable<Post> GetUserPosts(int userId)
+
+        private IEnumerable<Post> TryGetUserPosts(int userId)
         {
             var resource = $"users/{userId}/posts";
             var request = new RestRequest(resource, Method.GET);
@@ -62,8 +64,8 @@ namespace VMindbooke.Bot.Application
             var content = JsonConvert.DeserializeObject<Post[]>(response.Content);
             return content;
         }
-        
-        public User GetUser(int userId)
+
+        private User TryGetUser(int userId)
         {
             var resource = $"users/{userId}";
             var request = new RestRequest(resource, Method.GET);
@@ -71,8 +73,8 @@ namespace VMindbooke.Bot.Application
             var content = JsonConvert.DeserializeObject<User>(response.Content);
             return content;
         }
-        
-        public bool PostComment(int postId, string content)
+
+        private bool TryPostComment(int postId, string content)
         {
             var resource = $"posts/{postId}/comments";
             var request = new RestRequest(resource, Method.POST);
@@ -81,8 +83,8 @@ namespace VMindbooke.Bot.Application
             var response = _retryPolicy.Execute(() => _restClient.Execute(request));
             return response.IsSuccessful;
         }
-        
-        public bool ReplyToComment(int postId, string commentId, string content)
+
+        private bool TryReplyToComment(int postId, string commentId, string content)
         {
             var resource = $"posts/{postId}/comments/{commentId}/replies";
             var request = new RestRequest(resource, Method.POST);
@@ -92,7 +94,7 @@ namespace VMindbooke.Bot.Application
             return response.IsSuccessful;
         }
 
-        public bool CreatePost(string title, string content)
+        private bool TryCreatePost(string title, string content)
         {
             var resource = $"users/{_settings.UserId}/posts";
             var request = new RestRequest(resource, Method.POST);
@@ -100,6 +102,97 @@ namespace VMindbooke.Bot.Application
             request.AddHeader("Authorization", _settings.UserToken);
             var response = _retryPolicy.Execute(() => _restClient.Execute(request));
             return response.IsSuccessful;
+        }
+
+        public IEnumerable<Post> GetPosts()
+        {
+            try
+            {
+                return TryGetPosts();
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"An error occurred while loading posts: {e.Message}");
+                return null;
+            }
+        }
+
+        public IEnumerable<User> GetUsers()
+        {
+            try
+            {
+                return TryGetUsers();
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"An error occurred while loading users: {e.Message}");
+                return null;
+            }
+        }
+
+        public IEnumerable<Post> GetUserPosts(int userId)
+        {
+            try
+            {
+                return TryGetUserPosts(userId);
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"An error occurred while loading user's posts: {e.Message}");
+                return null;
+            }
+        }
+
+        public User GetUser(int userId)
+        {
+            try
+            {
+                return TryGetUser(userId);
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"An error occurred while loading a user: {e.Message}");
+                return null;
+            }
+        }
+
+        public bool PostComment(int postId, string content)
+        {
+            try
+            {
+                return TryPostComment(postId, content);
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"An error occurred while posting a comment: {e.Message}");
+                return false;
+            }
+        }
+
+        public bool ReplyToComment(int postId, string commentId, string content)
+        {
+            try
+            {
+                return TryReplyToComment(postId, commentId, content);
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"An error occurred while replying to a comment: {e.Message}");
+                return false;
+            }
+        }
+
+        public bool CreatePost(string title, string content)
+        {
+            try
+            {
+                return TryCreatePost(title, content);
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"An error occurred while creating a post: {e.Message}");
+                return false;
+            }
         }
     }
 }
