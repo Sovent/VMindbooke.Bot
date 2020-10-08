@@ -31,14 +31,15 @@ namespace ShitBot
             IConfiguration cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
             _bot = new ShitBotClient();
             _client = new VmindBookeClient(cfg["ApiBaseUrl"]);
+            _skip = Int32.Parse(cfg["skip"]);
+            _take = Int32.Parse(cfg["take"]);
             RefreshData();
             _comentaryBorder = Int32.Parse(cfg["_commentaryBorder"]);
             _replyBorder = Int32.Parse(cfg["_replyBorder"]);
             _repostBorder = Int32.Parse(cfg["_repostBorder"]);
             _userBorder = Int32.Parse(cfg["_userBorder"]);
             _stopBorder = Int32.Parse(cfg["_stopBorder"]);
-            _skip = Int32.Parse(cfg["skip"]);
-            _take = Int32.Parse(cfg["take"]);
+            
         }
 
         public void RefreshData()
@@ -126,7 +127,6 @@ namespace ShitBot
            
             using (var backgroundServer = new BackgroundJobServer())
             {
-                int i = 0;
                 Log.Logger.Information("Job Started");
                 while (!IsTimeToStop())
                 {
