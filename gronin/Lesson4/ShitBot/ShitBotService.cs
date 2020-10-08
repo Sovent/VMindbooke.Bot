@@ -30,8 +30,8 @@ namespace ShitBot
         {
             IConfiguration cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
             _bot = new ShitBotClient();
-            var _client = new VmindBookeClient(cfg["ApiBaseUrl"]);
-            RefreshData(_client);
+            _client = new VmindBookeClient(cfg["ApiBaseUrl"]);
+            RefreshData();
             _comentaryBorder = Int32.Parse(cfg["_commentaryBorder"]);
             _replyBorder = Int32.Parse(cfg["_replyBorder"]);
             _repostBorder = Int32.Parse(cfg["_repostBorder"]);
@@ -41,7 +41,7 @@ namespace ShitBot
             _take = Int32.Parse(cfg["take"]);
         }
 
-        public void RefreshData(VmindBookeClient _client)
+        public void RefreshData()
         {
             
             _posts = _client.GetPosts(_skip, _take);
@@ -122,7 +122,7 @@ namespace ShitBot
             RecurringJob.AddOrUpdate(()=>ReplyOnPopularComment(),Cron.Minutely);
             RecurringJob.AddOrUpdate(()=>RepostOfPopularPost(),Cron.Minutely);
             RecurringJob.AddOrUpdate(()=>StealPopularUsersPost(),Cron.Minutely);
-            RecurringJob.AddOrUpdate(()=>RefreshData(_client),Cron.Hourly);
+            RecurringJob.AddOrUpdate(()=>RefreshData(),Cron.Hourly);
            
             using (var backgroundServer = new BackgroundJobServer())
             {
