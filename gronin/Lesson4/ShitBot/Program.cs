@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 using VmindbookeSDK;
+using VMindbookeSDK.Entities;
 
 namespace ShitBot
 {
@@ -60,6 +61,17 @@ namespace ShitBot
            logger.Error("dfghjk");
            
            Console.WriteLine("keks");
+
+           var bot = new ShitBotClient();
+           var client = new VmindBookeClient("http://135.181.101.47");
+           var testres = client.RegisterUser(new NewUser("test"));
+           Console.WriteLine(testres.Token);
+           Console.WriteLine(testres.Id);
+           var post = client.GetPost(12);
+           //bot.Comment(post);
+           var com = post.Comments.First();
+           Console.WriteLine(post.Content);
+           //bot.Repost(post);
 
         }
     }
