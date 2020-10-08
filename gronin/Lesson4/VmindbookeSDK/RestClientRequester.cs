@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Retry;
 using RestSharp;
 
 namespace VmindbookeSDK
@@ -7,10 +9,14 @@ namespace VmindbookeSDK
     public class RestClientRequester
     {
         private readonly RestClient _restClient;
+        private readonly RetryPolicy<IRestResponse> _retryPolicy;
         
         public RestClientRequester(string baseUrl)
         {
             _restClient = new RestClient(baseUrl);
+            _retryPolicy = Policy.HandleResult<IRestResponse>
+                    (r=> !r.IsSuccessful)
+                    .Retry(10);
         }
         
         public IRestResponse SendRequest<TBody>(
@@ -32,7 +38,10 @@ namespace VmindbookeSDK
                     if (param.Value != null) 
                         request.AddQueryParameter(param.Key, param.Value);
             }
-            return _restClient.Execute(request);
+            
+            var response = _retryPolicy.Execute(()=> _restClient.Execute(request));
+            
+            return response;
         }
 
         public IRestResponse SendRequest(

@@ -59,19 +59,21 @@ namespace ShitBot
                .WriteTo.Console()
                .CreateLogger();
            logger.Error("dfghjk");
-           
+           Log.Logger = logger;
            Console.WriteLine("keks");
+           Log.Logger.Error("scscscsc");
 
            var bot = new ShitBotClient();
            var client = new VmindBookeClient("http://135.181.101.47");
            var testres = client.RegisterUser(new NewUser("test"));
            Console.WriteLine(testres.Token);
            Console.WriteLine(testres.Id);
-           var post = client.GetPost(12);
+           var post = client.GetPost(10);
            //bot.Comment(post);
            var com = post.Comments.First();
-           Console.WriteLine(post.Content);
+           //Console.WriteLine(post.Content);
            //bot.Repost(post);
+           //bot.Reply(post,com);
 
         }
     }
