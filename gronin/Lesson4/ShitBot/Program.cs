@@ -54,7 +54,7 @@ namespace ShitBot
            }*/
 
 
-           var logger = new LoggerConfiguration()
+           /*var logger = new LoggerConfiguration()
                .WriteTo.File("reg.log", restrictedToMinimumLevel: LogEventLevel.Information)
                .WriteTo.Console()
                .CreateLogger();
@@ -72,8 +72,23 @@ namespace ShitBot
            //bot.Comment(post);
            var com = post.Comments.First();
            //Console.WriteLine(post.Content);
-           //bot.Repost(post);
+           bot.Repost(post);
            //bot.Reply(post,com);
+           var sm =client.GetPosts(10,5);
+           foreach (var i in sm)
+           {
+               Console.WriteLine(i.Id);
+           }*/
+           var logger = new LoggerConfiguration()
+               .WriteTo.File("reg.log", restrictedToMinimumLevel: LogEventLevel.Information)
+               .WriteTo.Console(LogEventLevel.Verbose)
+               .CreateLogger();
+           
+           Log.Logger = logger;
+           Log.Logger.Information("Check");
+           Console.WriteLine("csccsc");
+           var service = new ShitBotService();
+           service.StartFarming();
 
         }
     }

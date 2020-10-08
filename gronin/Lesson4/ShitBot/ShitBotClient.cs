@@ -9,7 +9,7 @@ namespace ShitBot
     {
         
             private IVmindbookeClient _vMindbooke;
-            private UserCredentials _credentials;
+            public readonly UserCredentials _credentials;
             private IMessageGenerator _messageGenerator;
 
             public ShitBotClient()

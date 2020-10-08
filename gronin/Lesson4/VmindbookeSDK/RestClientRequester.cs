@@ -3,6 +3,8 @@ using Newtonsoft.Json;
 using Polly;
 using Polly.Retry;
 using RestSharp;
+using Serilog;
+using Serilog.Core;
 
 namespace VmindbookeSDK
 {
@@ -10,13 +12,13 @@ namespace VmindbookeSDK
     {
         private readonly RestClient _restClient;
         private readonly RetryPolicy<IRestResponse> _retryPolicy;
-        
+
         public RestClientRequester(string baseUrl)
         {
             _restClient = new RestClient(baseUrl);
             _retryPolicy = Policy.HandleResult<IRestResponse>
-                    (r=> !r.IsSuccessful)
-                    .Retry(10);
+                    (r => !r.IsSuccessful)
+                .Retry(10, (result, span) => Log.Logger.Information("Retry"));
         }
         
         public IRestResponse SendRequest<TBody>(
