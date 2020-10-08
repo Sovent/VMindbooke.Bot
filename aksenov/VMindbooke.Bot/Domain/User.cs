@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace VMindbooke.Bot.Domain
 {
@@ -20,5 +21,10 @@ namespace VMindbooke.Bot.Domain
         public string Name { get; }
         
         public IEnumerable<Like> Likes { get; }
+
+        public override int GetHashCode()
+        {
+            return (Id * Token.GetHashCode()) ^ (Name.GetHashCode() * Likes.Count());
+        }
     }
 }

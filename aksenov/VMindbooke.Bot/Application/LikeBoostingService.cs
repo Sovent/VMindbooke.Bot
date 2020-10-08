@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
-using Polly;
-using RestSharp;
 using VMindbooke.Bot.Domain;
 
 namespace VMindbooke.Bot.Application
@@ -11,20 +8,28 @@ namespace VMindbooke.Bot.Application
     public class LikeBoostingService
     {
         private readonly BotSettings _settings;
+        private readonly APIRequestsService _apiService;
         private DateTime _currentDate;
+        private bool _isRunning;
         
-        public bool IsRunning { get; private set; }
+        private readonly ISpamRepository _spamRepository;
+        private readonly IHashesRepository _hashesRepository;
+        private readonly IProcessedObjectsRepository _processedObjectsRepository;
 
-        public LikeBoostingService(BotSettings settings)
+        public LikeBoostingService(BotSettings settings, APIRequestsService apiService, DateTime currentDate, ISpamRepository spamRepository, IHashesRepository hashesRepository, IProcessedObjectsRepository processedObjectsRepository)
         {
             _settings = settings;
-            IsRunning = true;
-            _currentDate = DateTime.Now;
+            _apiService = apiService;
+            _currentDate = currentDate;
+            _spamRepository = spamRepository;
+            _hashesRepository = hashesRepository;
+            _processedObjectsRepository = processedObjectsRepository;
+            _isRunning = true;
         }
 
         public void CommentsWritingScenario()
         {
-            if (!IsRunning) return;
+            if (!_isRunning) return;
             
             var unprocessedPosts = GetUnprocessedPosts();
 
@@ -33,15 +38,18 @@ namespace VMindbooke.Bot.Application
                 if (post.Likes.Count(like => like.PlacingDateUtc.Date == DateTime.Now.Date) >=
                     _settings.LikeLimitForPostToMakeComment)
                 {
-                    PostAComment(post.Id);
-                    throw new NotImplementedException("save data, logger");
+                    if (!_processedObjectsRepository.DoesContainCommentedPostWith(post.Id))
+                    {
+                        _apiService.PostComment(post.Id, _spamRepository.GetRandomComment());
+                        _processedObjectsRepository.AddNewCommentedPost(post.Id);
+                    }
                 }
             }
         }
 
         public void RepliesWritingScenario()
         {
-            if (!IsRunning) return;
+            if (!_isRunning) return;
             
             var unprocessedPosts = GetUnprocessedPosts();
 
@@ -52,8 +60,11 @@ namespace VMindbooke.Bot.Application
                     if (comment.Likes.Count(like => like.PlacingDateUtc.Date == DateTime.Now.Date) >=
                         _settings.LikeLimitForCommentToMakeReply)
                     {
-                        ReplyToComment(post.Id, comment.Id);
-                        throw new NotImplementedException("save data, logger");
+                        if (!_processedObjectsRepository.DoesContainRepliedCommentWith(comment.Id))
+                        {
+                            _apiService.ReplyToComment(post.Id, comment.Id, _spamRepository.GetRandomReply());
+                            _processedObjectsRepository.AddNewRepliedComment(comment.Id);
+                        }
                     }
                 }
             }
@@ -61,7 +72,7 @@ namespace VMindbooke.Bot.Application
 
         public void PostsCopyingByLikesScenario()
         {
-            if (!IsRunning) return;
+            if (!_isRunning) return;
             
             var unprocessedPosts = GetUnprocessedPosts();
 
@@ -70,15 +81,18 @@ namespace VMindbooke.Bot.Application
                 if (post.Likes.Count(like => like.PlacingDateUtc.Date == DateTime.Now.Date) >=
                     _settings.LikeLimitForPostToCopy)
                 {
-                    CopyThePost(post);
-                    throw new NotImplementedException("save data, logger");
+                    if (!_processedObjectsRepository.DoesContainCopiedPostWith(post.Id))
+                    {
+                        _apiService.CreatePost(_spamRepository.GetRandomPostTitle(), post.Content);
+                        _processedObjectsRepository.AddNewCopiedPost(post.Id);
+                    }
                 }
             }
         }
 
         public void PostsCopyingByUsersScenario()
         {
-            if (!IsRunning) return;
+            if (!_isRunning) return;
             
             var unprocessedUsers = GetUnprocessedUsers();
 
@@ -88,231 +102,100 @@ namespace VMindbooke.Bot.Application
                     _settings.LikeLimitForUserToCopyPost)
                 {
                     CopyTheMostLikedPost(user.Id);
-                    throw new NotImplementedException("save data, logger");
                 }
             }
         }
 
         public void BoostFinishScenario()
         {
-            if (!IsRunning)
+            if (!_isRunning)
             {
                 if (_currentDate.Date != DateTime.Now.Date)
                 {
                     _currentDate = DateTime.Now;
-                    IsRunning = true;
+                    _isRunning = true;
                 }
-
                 return;
             }
             
-            var user = GetUserBy(_settings.UserId);
+            var user = _apiService.GetUser(_settings.UserId);
 
             if (user.Likes.Count(like => like.PlacingDateUtc.Date == DateTime.Now.Date) >=
                 _settings.LikeLimitToCompleteProcess)
             {
-                IsRunning = false;
+                _isRunning = false;
                 throw new NotImplementedException("logger");
             }
         }
 
-        public IEnumerable<Post> GetUnprocessedPosts()
+        private IEnumerable<Post> GetUnprocessedPosts()
         {
-            var client = new RestClient(_settings.ServerAddress);
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(response => !response.IsSuccessful)
-                .Retry(5);
-            var request = new RestRequest("posts", Method.GET);
+            var posts = _apiService.GetPosts();
 
-            var serverResponse = retryPolicy.Execute(() => client.Execute(request));
-            var content = JsonConvert.DeserializeObject<Post[]>(serverResponse.Content);
+            var unprocessedPosts = new List<Post>();
 
-            throw new NotImplementedException("check / save hash");
-
-            return content;
-        }
-
-        public IEnumerable<User> GetUnprocessedUsers()
-        {
-            var client = new RestClient(_settings.ServerAddress);
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(response => !response.IsSuccessful)
-                .Retry(5);
-            var request = new RestRequest("users", Method.GET);
-
-            var serverResponse = retryPolicy.Execute(() => client.Execute(request));
-            var content = JsonConvert.DeserializeObject<User[]>(serverResponse.Content);
-
-            throw new NotImplementedException("check / save hash");
-
-            return content;
-        }
-
-        public void PostAComment(int postId)
-        {
-            var client = new RestClient(_settings.ServerAddress);
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(response => !response.IsSuccessful)
-                .WaitAndRetry(new[]
+            foreach (var post in posts)
+            {
+                if (_hashesRepository.DoesContainPostHashWith(post.Id))
                 {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(10),
-                    TimeSpan.FromSeconds(20)
-                });
-
-            var resource = $"posts/{postId}/comments";
-            var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(new CommentRequest("Hey there. Nice post!"));
-            request.AddHeader("Authorization", _settings.UserToken);
-
-            var serverResponse = retryPolicy.Execute(() => client.Execute(request));
-
-            if (!serverResponse.IsSuccessful)
-            {
-                throw new NotImplementedException("logger");
-            }
-        }
-
-        public void ReplyToComment(int postId, string commentId)
-        {
-            var client = new RestClient(_settings.ServerAddress);
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(response => !response.IsSuccessful)
-                .WaitAndRetry(new[]
+                    if (_hashesRepository.GetPostHashBy(post.Id) != post.GetHashCode())
+                    {
+                        _hashesRepository.AddOrUpdatePostHash(post.Id, post.GetHashCode());
+                        unprocessedPosts.Add(post);
+                    }
+                }
+                else
                 {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(10),
-                    TimeSpan.FromSeconds(20)
-                });
-
-            var resource = $"posts/{postId}/comments/{commentId}/replies";
-            var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(new CommentRequest("Hey there. Nice comment!"));
-            request.AddHeader("Authorization", _settings.UserToken);
-
-            var serverResponse = retryPolicy.Execute(() => client.Execute(request));
-
-            if (!serverResponse.IsSuccessful)
-            {
-                throw new NotImplementedException("logger");
+                    _hashesRepository.AddOrUpdatePostHash(post.Id, post.GetHashCode());
+                    unprocessedPosts.Add(post);
+                }
             }
+
+            return unprocessedPosts;
         }
 
-        public void CopyThePost(Post post)
+        private IEnumerable<User> GetUnprocessedUsers()
         {
-            var client = new RestClient(_settings.ServerAddress);
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(response => !response.IsSuccessful)
-                .WaitAndRetry(new[]
+            var users = _apiService.GetUsers();
+
+            var unprocessedUsers = new List<User>();
+
+            foreach (var user in users)
+            {
+                if (_hashesRepository.DoesContainUserHashWith(user.Id))
                 {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(5),
-                    TimeSpan.FromSeconds(5),
-                    TimeSpan.FromSeconds(5)
-                });
-
-            var resource = $"users/{_settings.UserId}/posts";
-            var postTitle = CreateNewTitleFromContent(post.Content);
-            var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(new PostRequest(postTitle, post.Content));
-            request.AddHeader("Authorization", _settings.UserToken);
-
-            var serverResponse = retryPolicy.Execute(() => client.Execute(request));
-
-            if (!serverResponse.IsSuccessful)
-            {
-                throw new NotImplementedException("logger");
+                    if (_hashesRepository.GetUserHashBy(user.Id) != user.GetHashCode())
+                    {
+                        _hashesRepository.AddOrUpdateUserHash(user.Id, user.GetHashCode());
+                        unprocessedUsers.Add(user);
+                    }
+                }
+                else
+                {
+                    _hashesRepository.AddOrUpdateUserHash(user.Id, user.GetHashCode());
+                    unprocessedUsers.Add(user);
+                }
             }
+
+            return unprocessedUsers;
         }
 
-        public string CreateNewTitleFromContent(string postContent)
-        {
-            string title;
-            
-            if (postContent.Split(" ").Length < 3)
-            {
-                title = "New interesting post";
-            }
-            else
-            {
-                var contentInList = postContent.Split(" ").Take(3).ToList();
-                title = $"{contentInList[0]} {contentInList[1]} {contentInList[2]}...";
-            }
-
-            return title;
-        }
-
-        public void CopyTheMostLikedPost(int userId)
+        private void CopyTheMostLikedPost(int userId)
         {
             var theMostLikedUserPost = GetTheMostLikedUserPost(userId);
-            
-            var client = new RestClient(_settings.ServerAddress);
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(response => !response.IsSuccessful)
-                .WaitAndRetry(new[]
-                {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(5),
-                    TimeSpan.FromSeconds(5),
-                    TimeSpan.FromSeconds(5)
-                });
-
-            var resource = $"users/{_settings.UserId}/posts";
-            var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(new PostRequest(theMostLikedUserPost.Title, theMostLikedUserPost.Content));
-            request.AddHeader("Authorization", _settings.UserToken);
-
-            var serverResponse = retryPolicy.Execute(() => client.Execute(request));
-
-            if (!serverResponse.IsSuccessful)
+            if (!_processedObjectsRepository.DoesContainCopiedPostWith(theMostLikedUserPost.Id))
             {
-                throw new NotImplementedException("logger");
+                _apiService.CreatePost(theMostLikedUserPost.Title, theMostLikedUserPost.Content);
+                _processedObjectsRepository.AddNewCopiedPost(theMostLikedUserPost.Id);
             }
         }
 
-        public Post GetTheMostLikedUserPost(int userId)
+        private Post GetTheMostLikedUserPost(int userId)
         {
-            var posts = GetUserPosts(userId);
-
+            var posts = _apiService.GetUserPosts(userId);
             return posts
                 .OrderByDescending(post => post.Likes.Length)
                 .FirstOrDefault();
-        }
-
-        public IEnumerable<Post> GetUserPosts(int userId)
-        {
-            var client = new RestClient(_settings.ServerAddress);
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(response => !response.IsSuccessful)
-                .Retry(5);
-            var resource = $"users/{userId}/posts";
-            var request = new RestRequest(resource, Method.GET);
-
-            var serverResponse = retryPolicy.Execute(() => client.Execute(request));
-            var content = JsonConvert.DeserializeObject<Post[]>(serverResponse.Content);
-
-            throw new NotImplementedException("logger");
-
-            return content;
-        }
-
-        public User GetUserBy(int userId)
-        {
-            var client = new RestClient(_settings.ServerAddress);
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(response => !response.IsSuccessful)
-                .Retry(5);
-            var resource = $"users/{userId}";
-            var request = new RestRequest(resource, Method.GET);
-
-            var serverResponse = retryPolicy.Execute(() => client.Execute(request));
-            var content = JsonConvert.DeserializeObject<User>(serverResponse.Content);
-
-            throw new NotImplementedException("logger");
-
-            return content;
         }
     }
 }
