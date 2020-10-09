@@ -17,7 +17,7 @@ namespace VMindBooke.SDK.Application
         {
             _restClient = restClient;
             _retryPolicy = Policy<IRestResponse>
-                .HandleResult(r => r.StatusCode != HttpStatusCode.OK)
+                .HandleResult(r => r.StatusCode == HttpStatusCode.InternalServerError)
                 .WaitAndRetry(15, retryAttempt =>
                     TimeSpan.FromSeconds(Math.Pow(1, retryAttempt)));
         }
