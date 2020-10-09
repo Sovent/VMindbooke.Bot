@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Polly;
 using RestSharp;
 using VMindbooke.SDK.Model;
 
@@ -7,7 +8,8 @@ namespace VMindbooke.SDK
 {
     public class VMindbookeClient : IVMindbookeClient
     {
-        private JsonRestClient _jsonRestClient;
+        
+        private readonly JsonRestClient _jsonRestClient;
 
         private static IDictionary<string, string> GetAuthHeaders(UserCredentials credentials) =>
             new Dictionary<string, string> {["Authorization"] = credentials.Token};
@@ -15,9 +17,11 @@ namespace VMindbooke.SDK
         private static IDictionary<string, string> GetPaginationParams(int? skip, int? take) => 
             new Dictionary<string, string> {["skip"] = skip?.ToString(), ["take"] = take?.ToString()};
 
-        public VMindbookeClient(string baseUrl) => 
+        public VMindbookeClient(string baseUrl)
+        {
             _jsonRestClient = new JsonRestClient(baseUrl);
-        
+        }
+
         public IEnumerable<User> GetUsers(int? skip = null, int? take = null) => 
             _jsonRestClient.MakeRequest<IEnumerable<User>>(Method.GET, $"/users",
                 GetPaginationParams(skip, take));

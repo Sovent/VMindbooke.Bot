@@ -6,7 +6,7 @@ namespace VMindbooke.RainbowKarma
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            
         }
     }
 }

@@ -7,9 +7,9 @@ namespace VMindbooke.SDK.Model
     {
         public int Id { get; }
         public string Name { get; }
-        public IEnumerable<Like> Likes { get; }
+        public IReadOnlyList<Like> Likes { get; }
 
-        public User(int id, string name, IEnumerable<Like> likes)
+        public User(int id, string name, IReadOnlyList<Like> likes)
         {
             Id = id;
             Name = name ?? throw new ArgumentNullException(nameof(name));

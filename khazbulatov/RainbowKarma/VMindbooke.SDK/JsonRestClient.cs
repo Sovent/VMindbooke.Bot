@@ -1,13 +1,21 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Retry;
 using RestSharp;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace VMindbooke.SDK
 {
     public class JsonRestClient
     {
+        private const int RetryCount = 5;
+        private readonly RetryPolicy<IRestResponse> _retryPolicy;
         private readonly RestClient _restClient;
-        
+        private readonly Logger _logger;
+
         private IRestResponse SendRequest<TBody>(Method method, string resource, TBody body,
             ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null)
@@ -17,11 +25,13 @@ namespace VMindbooke.SDK
                 JsonConvert.SerializeObject(body), ParameterType.RequestBody);
             if (headers != null) request.AddHeaders(headers);
             if (queryParams != null)
-            {
                 foreach (KeyValuePair<string, string> param in queryParams)
                     if (param.Value != null) request.AddQueryParameter(param.Key, param.Value);
-            }
-            return _restClient.Execute(request);
+            
+            _logger.Information($"Requesting {request.Resource}");
+            return _retryPolicy != null
+                ? _retryPolicy.Execute(() => _restClient.Execute(request))
+                : _restClient.Execute(request);
         }
 
         private IRestResponse SendRequest(Method method, string resource,
@@ -35,6 +45,15 @@ namespace VMindbooke.SDK
         public JsonRestClient(string baseUrl)
         {
             _restClient = new RestClient(baseUrl);
+            _retryPolicy = Policy<IRestResponse>
+                .HandleResult(response => !response.IsSuccessful)
+                .Retry(RetryCount, (result, i) =>
+                    _logger.Information($"Retried request {i} times"));
+
+            _logger = new LoggerConfiguration()
+                .WriteTo.File("vmbsdk.log", LogEventLevel.Information)
+                .WriteTo.Console()
+                .CreateLogger();
         }
 
         public void MakeRequest(Method method, string resource,
