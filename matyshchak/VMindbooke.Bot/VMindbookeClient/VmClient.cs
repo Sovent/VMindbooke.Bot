@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
 using Polly;
@@ -9,11 +10,11 @@ using VMindbookeClient.Domain;
 
 namespace VMindbookeClient
 {
-    public class VMindbookeClient : IVMindbookeClient
+    public class VmClient : IVmClient
     {
         private readonly RestClient _restClient;
 
-        public VMindbookeClient(string vmindbookeBaseUrl)
+        public VmClient(string vmindbookeBaseUrl)
         {
             _restClient = new RestClient(vmindbookeBaseUrl);
         }
@@ -25,6 +26,24 @@ namespace VMindbookeClient
             var response = _restClient.Execute(request);
             
             var content = JsonConvert.DeserializeObject<User>(response.Content);
+            return content;
+        }
+        
+        public IReadOnlyCollection<User> GetAllUsers()
+        {
+            var retryPolicy = Policy<IRestResponse>
+                .HandleResult(r => r.StatusCode == HttpStatusCode.InternalServerError)
+                .WaitAndRetry(new[]
+                {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(10),
+                    TimeSpan.FromSeconds(30)
+                }, (result, span) => Console.WriteLine());
+            
+            var request = new RestRequest($"users", Method.GET);
+            var response = retryPolicy.Execute(() => _restClient.Execute(request));
+            
+            var content = JsonConvert.DeserializeObject<User[]>(response.Content);
             return content;
         }
         
@@ -46,6 +65,24 @@ namespace VMindbookeClient
             return content;
         }
         
+        public IReadOnlyCollection<Post> GetUserPosts(int userId)
+        {
+            var retryPolicy = Policy<IRestResponse>
+                .HandleResult(r => r.StatusCode == HttpStatusCode.InternalServerError)
+                .WaitAndRetry(new[]
+                {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(10),
+                    TimeSpan.FromSeconds(30)
+                }, (result, span) => Console.WriteLine());
+            
+            var request = new RestRequest($"user/{userId}/posts", Method.GET);
+            var response = retryPolicy.Execute(() => _restClient.Execute(request));
+            
+            var posts = JsonConvert.DeserializeObject<Post[]>(response.Content);
+            return posts;
+        }
+        
         public IEnumerable<Post> GetAllPosts()
         {
             var retryPolicy = Policy<IRestResponse>
@@ -60,8 +97,13 @@ namespace VMindbookeClient
             var request = new RestRequest($"posts/", Method.GET);
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
             
-            var content = JsonConvert.DeserializeObject<Post[]>(response.Content);
-            return content;
+            var posts = JsonConvert.DeserializeObject<Post[]>(response.Content);
+            return posts;
+        }
+        
+        public IEnumerable<Comment> GetAllComments()
+        {
+            return GetAllPosts().SelectMany(post => post.Comments);
         }
         
         public IReadOnlyCollection<Post> GetPosts(int take, int skip = 0)
