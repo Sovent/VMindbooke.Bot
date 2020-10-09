@@ -36,7 +36,7 @@ namespace Application
             RecurringJob.AddOrUpdate<LikeBoostingClient>(
                 "BoostFinish", 
                 client => client.BoostFinish(), 
-                "*/2 * * * *");
+                Cron.Minutely);
 
             using (var backgroundServer = new BackgroundJobServer())
             {

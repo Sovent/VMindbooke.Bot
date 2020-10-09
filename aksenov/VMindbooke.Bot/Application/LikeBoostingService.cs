@@ -148,7 +148,7 @@ namespace VMindbooke.Bot.Application
 
             if (theMostLikedUserPost == null)
             {
-                _logger.Information($"User's post was not loaded. The null-object was received.");
+                _logger.Information($"User's posts was not loaded. The null-object was received.");
                 return;
             }
 
