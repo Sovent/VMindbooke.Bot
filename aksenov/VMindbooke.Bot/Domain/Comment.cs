@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace VMindbooke.Bot.Domain
 {
-    public class Comment
+    public class Comment: IValidObject
     {
         public Comment(string id, int authorId, string content, DateTime postingDateUtc, Comment[] replies, Like[] likes)
         {
@@ -26,5 +26,13 @@ namespace VMindbooke.Bot.Domain
         public Comment[] Replies { get; }
 
         public Like[] Likes { get; }
+        
+        public bool IsValid()
+        {
+            if (Id == null || Content == null || Replies == null || Likes == null)
+                return false;
+
+            return true;
+        }
     }
 }

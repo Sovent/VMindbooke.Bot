@@ -6,18 +6,17 @@ namespace VMindbooke.Bot
 {
     public class BotSettings
     {
-        public BotSettings(string serverAddress, string userToken, int userId, int likeLimitForPostToMakeComment, int likeLimitForCommentToMakeReply, int likeLimitForPostToCopy, int likeLimitForUserToCopyPost, int likeLimitToCompleteProcess, DateTime likePeriodFrom, DateTime likePeriodTo)
+        public BotSettings(string serverAddress, string userToken, int userId, string userName, int likeLimitForPostToMakeComment, int likeLimitForCommentToMakeReply, int likeLimitForPostToCopy, int likeLimitForUserToCopyPost, int likeLimitToCompleteProcess)
         {
             ServerAddress = serverAddress;
             UserToken = userToken;
             UserId = userId;
+            UserName = userName;
             LikeLimitForPostToMakeComment = likeLimitForPostToMakeComment;
             LikeLimitForCommentToMakeReply = likeLimitForCommentToMakeReply;
             LikeLimitForPostToCopy = likeLimitForPostToCopy;
             LikeLimitForUserToCopyPost = likeLimitForUserToCopyPost;
             LikeLimitToCompleteProcess = likeLimitToCompleteProcess;
-            LikePeriodFrom = likePeriodFrom;
-            LikePeriodTo = likePeriodTo;
         }
 
         public static BotSettings FromJsonFile(string filePath)
@@ -34,6 +33,8 @@ namespace VMindbooke.Bot
         public string UserToken { get; }
         
         public int UserId { get; }
+        
+        public string UserName { get; }
 
         public int LikeLimitForPostToMakeComment { get; }
 
@@ -44,9 +45,5 @@ namespace VMindbooke.Bot
         public int LikeLimitForUserToCopyPost { get; }
 
         public int LikeLimitToCompleteProcess { get; }
-
-        public DateTime LikePeriodFrom { get; }
-
-        public DateTime LikePeriodTo { get; }
     }
 }

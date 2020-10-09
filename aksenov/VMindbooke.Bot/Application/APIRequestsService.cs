@@ -113,6 +113,16 @@ namespace VMindbooke.Bot.Application
             return response.IsSuccessful;
         }
 
+        private User TryPostUser(string name)
+        {
+            var resource = $"users";
+            var request = new RestRequest(resource, Method.POST);
+            request.AddJsonBody(new UserRequest(name));
+            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
+            var content = JsonConvert.DeserializeObject<User>(response.Content);
+            return content;
+        }
+
         public IEnumerable<Post> GetPosts()
         {
             try
@@ -214,6 +224,19 @@ namespace VMindbooke.Bot.Application
             {
                 _logger.Error($"An error occurred while creating a post: {e.Message}");
                 return false;
+            }
+        }
+
+        public User PostUser(string name)
+        {
+            try
+            {
+                return TryPostUser(name);
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"An error occurred while creating a user: {e.Message}");
+                return null;
             }
         }
     }

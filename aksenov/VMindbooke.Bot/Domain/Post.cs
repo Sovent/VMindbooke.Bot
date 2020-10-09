@@ -40,6 +40,12 @@ namespace VMindbooke.Bot.Domain
             if (Title == null || Content == null || Comments == null || Likes == null)
                 return false;
 
+            foreach (var comment in Comments)
+            {
+                if (!comment.IsValid())
+                    return false;
+            }
+
             return true;
         }
     }

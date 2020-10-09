@@ -11,6 +11,7 @@ namespace VMindbooke.Bot.Application
         private readonly BotSettings _settings;
         private readonly APIRequestsService _apiService;
         private DateTime _currentDate;
+        private User _boostedUser;
         private bool _isRunning;
         
         private readonly ISpamRepository _spamRepository;
@@ -19,11 +20,12 @@ namespace VMindbooke.Bot.Application
 
         private readonly ILogger _logger;
 
-        public LikeBoostingService(BotSettings settings, APIRequestsService apiService, DateTime currentDate, ISpamRepository spamRepository, IHashesRepository hashesRepository, IProcessedObjectsRepository processedObjectsRepository, ILogger logger)
+        public LikeBoostingService(BotSettings settings, APIRequestsService apiService, DateTime currentDate, User boostedUser, ISpamRepository spamRepository, IHashesRepository hashesRepository, IProcessedObjectsRepository processedObjectsRepository, ILogger logger)
         {
             _settings = settings;
             _apiService = apiService;
             _currentDate = currentDate;
+            _boostedUser = boostedUser;
             _spamRepository = spamRepository;
             _hashesRepository = hashesRepository;
             _processedObjectsRepository = processedObjectsRepository;
@@ -184,7 +186,7 @@ namespace VMindbooke.Bot.Application
                 return;
             }
 
-            var user = _apiService.GetUser(_settings.UserId);
+            var user = _apiService.GetUser(_boostedUser.Id);
 
             if (user?.Likes.Count(like => like.PlacingDateUtc.Date == DateTime.Now.Date) >=
                 _settings.LikeLimitToCompleteProcess)

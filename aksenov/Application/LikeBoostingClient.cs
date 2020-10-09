@@ -1,17 +1,24 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Serilog;
 using VMindbooke.Bot;
 using VMindbooke.Bot.Application;
+using VMindbooke.Bot.Domain;
 using VMindbooke.Bot.Infrastructure;
 
 namespace Application
 {
     public class LikeBoostingClient
     {
-        private LikeBoostingService _service;
+        private static LikeBoostingService _boostingService;
 
         public LikeBoostingClient()
+        {
+            
+        }
+
+        static LikeBoostingClient()
         {
             BotSettings settings;
             try
@@ -23,12 +30,30 @@ namespace Application
                 Log.Error("Settings file 'appsettings.json' not found.");
                 throw new FileNotFoundException("appsettings.json");
             }
-
-            var apiRequestsService = new APIRequestsService(settings, Log.Logger);
             
-            _service = new LikeBoostingService(settings, 
+            var apiRequestsService = new APIRequestsService(settings, Log.Logger);
+            var userService = new BoostedUserService(apiRequestsService);
+            
+            User boostedUser;
+            if (userService.DoesUserExists(settings.UserId))
+            {
+                boostedUser = new User(settings.UserId, settings.UserToken, settings.UserName, new List<Like>());
+            }
+            else
+            {
+                boostedUser = userService.RegisterUser(settings.UserName);
+                if (boostedUser == null || !boostedUser.IsValid())
+                {
+                    throw new ArgumentNullException("boostedUser");
+                }
+
+                Log.Information($"User [Id: {boostedUser.Id}, Token: {boostedUser.Token}] was created.");
+            }
+
+            _boostingService = new LikeBoostingService(settings, 
                 apiRequestsService, 
                 DateTime.Now,
+                boostedUser,
                 new SpamRepository(), 
                 new HashesRepository(), 
                 new ProcessedObjectsRepository(), 
@@ -38,35 +63,35 @@ namespace Application
         public void CommentsWriting()
         {
             Log.Information("Comments writing scenario started.");
-            _service.CommentsWritingScenario();
+            _boostingService.CommentsWritingScenario();
             Log.Information("Comments writing scenario finished.");
         }
         
         public void RepliesWriting()
         {
             Log.Information("Replies writing scenario started.");
-            _service.RepliesWritingScenario();
+            _boostingService.RepliesWritingScenario();
             Log.Information("Replies writing scenario finished.");
         }
         
         public void PostsCopyingByLikes()
         {
             Log.Information("Posts copying by likes scenario started.");
-            _service.PostsCopyingByLikesScenario();
+            _boostingService.PostsCopyingByLikesScenario();
             Log.Information("Posts copying by likes scenario finished.");
         }
         
         public void PostsCopyingByUsers()
         {
             Log.Information("Posts copying by users scenario started.");
-            _service.PostsCopyingByUsersScenario();
+            _boostingService.PostsCopyingByUsersScenario();
             Log.Information("Posts copying by users scenario finished.");
         }
 
         public void BoostFinish()
         {
             Log.Information("Boost finish scenario started.");
-            _service.BoostFinishScenario();
+            _boostingService.BoostFinishScenario();
             Log.Information("Boost finish scenario finished.");
         }
     }
