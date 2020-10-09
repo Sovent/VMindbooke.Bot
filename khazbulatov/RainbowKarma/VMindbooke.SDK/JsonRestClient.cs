@@ -1,79 +1,76 @@
 ﻿using System.Collections.Generic;
-using Newtonsoft.Json;
 using Polly;
 using Polly.Retry;
 using RestSharp;
 using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 
 namespace VMindbooke.SDK
 {
     public class JsonRestClient
     {
         private const int RetryCount = 5;
-        private readonly RetryPolicy<IRestResponse> _retryPolicy;
         private readonly RestClient _restClient;
-        private readonly Logger _logger;
 
-        private IRestResponse SendRequest<TBody>(Method method, string resource, TBody body,
+        private IRestRequest PrepareRequest<TBody>(Method method, string resource, TBody body,
             ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null)
         {
             RestRequest request = new RestRequest(resource, method);
-            if (body != null) request.AddParameter("application/json",
-                JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+            if (body != null) request.AddJsonBody(body);
             if (headers != null) request.AddHeaders(headers);
             if (queryParams != null)
                 foreach (KeyValuePair<string, string> param in queryParams)
                     if (param.Value != null) request.AddQueryParameter(param.Key, param.Value);
-            
-            _logger.Information($"Requesting {request.Resource}");
-            return _retryPolicy != null
-                ? _retryPolicy.Execute(() => _restClient.Execute(request))
-                : _restClient.Execute(request);
+            return request;
         }
 
-        private IRestResponse SendRequest(Method method, string resource,
+        private IRestRequest PrepareRequest(Method method, string resource,
             ICollection<KeyValuePair<string, string>> queryParams = null,
-            ICollection<KeyValuePair<string, string>> headers = null) =>
-            SendRequest<object>(method, resource, null, queryParams, headers);
+            ICollection<KeyValuePair<string, string>> headers = null) => 
+            PrepareRequest<object>(method, resource, null, queryParams, headers);
 
-        private TResult ParseResponse<TResult>(IRestResponse response) =>
-            JsonConvert.DeserializeObject<TResult>(response.Content);
-
-        public JsonRestClient(string baseUrl)
+        private TResult ExecuteRequest<TResult>(IRestRequest request)
         {
-            _restClient = new RestClient(baseUrl);
-            _retryPolicy = Policy<IRestResponse>
+            RetryPolicy<IRestResponse<TResult>> retryPolicy = Policy<IRestResponse<TResult>>
                 .HandleResult(response => !response.IsSuccessful)
                 .Retry(RetryCount, (result, i) =>
-                    _logger.Information($"Retried request {i} times"));
-
-            _logger = new LoggerConfiguration()
-                .WriteTo.File("vmbsdk.log", LogEventLevel.Information)
-                .WriteTo.Console()
-                .CreateLogger();
+                    Log.Information($"Retried request {i} times"));
+            
+            Log.Information($"Requesting {request.Resource}");
+            return retryPolicy.Execute(() => _restClient.Execute<TResult>(request)).Data;
         }
+
+        private void ExecuteRequest(IRestRequest request)
+        {
+            RetryPolicy<IRestResponse> retryPolicy = Policy<IRestResponse>
+                .HandleResult(response => !response.IsSuccessful)
+                .Retry(RetryCount, (result, i) =>
+                    Log.Information($"Retried request {i} times"));
+            
+            Log.Information($"Requesting {request.Resource}");
+            retryPolicy.Execute(() => _restClient.Execute(request));
+        }
+
+        public JsonRestClient(string baseUrl) => _restClient = new RestClient(baseUrl);
 
         public void MakeRequest(Method method, string resource,
             ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null) =>
-            SendRequest(method, resource, queryParams, headers);
+            ExecuteRequest(PrepareRequest(method, resource, queryParams, headers));
 
         public void MakeRequest<TBody>(Method method, string resource, TBody body,
             ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null) =>
-            SendRequest<TBody>(method, resource, body, queryParams, headers);
+            ExecuteRequest(PrepareRequest<TBody>(method, resource, body, queryParams, headers));
 
         public TResult MakeRequest<TResult>(Method method, string resource,
             ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null) =>
-            ParseResponse<TResult>(SendRequest(method, resource, queryParams, headers));
+            ExecuteRequest<TResult>(PrepareRequest(method, resource, queryParams, headers));
 
         public TResult MakeRequest<TResult, TBody>(Method method, string resource, TBody body,
             ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null) =>
-            ParseResponse<TResult>(SendRequest<TBody>(method, resource, body, queryParams, headers));
+            ExecuteRequest<TResult>(PrepareRequest<TBody>(method, resource, body, queryParams, headers));
     }
 }
