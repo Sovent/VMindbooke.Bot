@@ -5,13 +5,13 @@ namespace LikesCheating.Application
 {
     public class CheatService : ICheatService
     {
-        public CheatService()
+        public CheatService(VMindbookeJobClient jobClient)
         {
-            _jobClient = new VMindbookeJobClient();
+            _jobClient = jobClient;
         }
-        public void StartCheating(int userId, string token)
+        public void StartCheating(CheatingUserContent userContent)
         {
-            _jobClient.StartCheatingJobs(userId, token);
+            _jobClient.StartCheatingJobs(userContent.UserId, userContent.Token);
         }
 
         public void StopCheating()

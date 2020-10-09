@@ -1,12 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Console\Console.csproj", "{4B37BBB0-2497-46E2-A6A6-1811F5BEA267}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindbooke.SDK", "VMindbooke.SDK\VMindbooke.SDK.csproj", "{83EEAD79-FC4F-4692-97E5-A8633779A73D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LikesCheating", "LikesCheating\LikesCheating.csproj", "{2952B6FF-1EDD-4837-AFE9-1488A5FA1366}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindbooke.Bot.Tests", "VMindbooke.Bot.Tests\VMindbooke.Bot.Tests.csproj", "{3639AE5C-3899-4613-884F-16F14718844A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Usage", "Usage", "{D244E0DB-83EB-41D6-B923-E47DFEC71157}"
+ProjectSection(SolutionItems) = preProject
+	appsettings.json = appsettings.json
+EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompositionRoot", "CompositionRoot\CompositionRoot.csproj", "{94244C12-B448-45BB-9A7B-A121E7903D26}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,10 +19,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4B37BBB0-2497-46E2-A6A6-1811F5BEA267}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4B37BBB0-2497-46E2-A6A6-1811F5BEA267}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4B37BBB0-2497-46E2-A6A6-1811F5BEA267}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4B37BBB0-2497-46E2-A6A6-1811F5BEA267}.Release|Any CPU.Build.0 = Release|Any CPU
 		{83EEAD79-FC4F-4692-97E5-A8633779A73D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{83EEAD79-FC4F-4692-97E5-A8633779A73D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83EEAD79-FC4F-4692-97E5-A8633779A73D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -30,7 +31,12 @@ Global
 		{3639AE5C-3899-4613-884F-16F14718844A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3639AE5C-3899-4613-884F-16F14718844A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3639AE5C-3899-4613-884F-16F14718844A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94244C12-B448-45BB-9A7B-A121E7903D26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94244C12-B448-45BB-9A7B-A121E7903D26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94244C12-B448-45BB-9A7B-A121E7903D26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94244C12-B448-45BB-9A7B-A121E7903D26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{94244C12-B448-45BB-9A7B-A121E7903D26} = {D244E0DB-83EB-41D6-B923-E47DFEC71157}
 	EndGlobalSection
 EndGlobal

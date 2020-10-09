@@ -17,10 +17,4 @@
       <PackageReference Include="Serilog.Sinks.File" Version="5.0.0-dev-00887" />
     </ItemGroup>
 
-    <ItemGroup>
-      <None Update="Domain\appsettings.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
-
 </Project>
