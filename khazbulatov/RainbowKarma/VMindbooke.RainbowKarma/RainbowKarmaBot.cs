@@ -11,14 +11,14 @@ namespace VMindbooke.RainbowKarma
 {
     public class RainbowKarmaBot
     {
-        private readonly RainbowClient _client;
         private readonly List<Post> _alreadyReposted;
+        private readonly IRainbowClient _client;
+        private readonly int _commentLikeCountToReply;
 
         private readonly int _myLikeCountToStop;
-        private readonly int _userLikeCountToRepost;
-        private readonly int _postLikeCountToRepost;
         private readonly int _postLikeCountToComment;
-        private readonly int _commentLikeCountToReply;
+        private readonly int _postLikeCountToRepost;
+        private readonly int _userLikeCountToRepost;
 
         public RainbowKarmaBot()
         {

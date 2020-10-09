@@ -11,7 +11,7 @@ namespace VMindbooke.SDK
         IEnumerable<Post> GetUserPosts(int userId);
         IEnumerable<Post> GetPosts(int? skip = null, int? take = null);
         Post GetPost(int postId);
-        
+
         UserCredentials CreateUser(NewUser newUser);
         int CreatePost(UserCredentials credentials, int userId, NewPost newPost);
         void LikePost(UserCredentials credentials, int postId);

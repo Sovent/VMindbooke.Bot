@@ -11,6 +11,8 @@ namespace VMindbooke.SDK
         private const int RetryCount = 5;
         private readonly RestClient _restClient;
 
+        public JsonRestClient(string baseUrl) => _restClient = new RestClient(baseUrl);
+
         private IRestRequest PrepareRequest<TBody>(Method method, string resource, TBody body,
             ICollection<KeyValuePair<string, string>> queryParams = null,
             ICollection<KeyValuePair<string, string>> headers = null)
@@ -52,8 +54,6 @@ namespace VMindbooke.SDK
                             + $"{string.Join("&", request.Parameters)}");
             retryPolicy.Execute(() => _restClient.Execute(request));
         }
-
-        public JsonRestClient(string baseUrl) => _restClient = new RestClient(baseUrl);
 
         public void MakeRequest(Method method, string resource,
             ICollection<KeyValuePair<string, string>> queryParams = null,

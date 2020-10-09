@@ -15,7 +15,7 @@ namespace VMindbooke.RainbowKarma
             string word = words[Random.Next(words.Length)];
             return string.Format(template, context, word);
         }
-        
+
         public static string GetCleverComment(string context) =>
             Format(context, new string[]
             {
@@ -25,7 +25,7 @@ namespace VMindbooke.RainbowKarma
                 "И что такое {1} по-твоему?",
                 "Аналитик диванный, ты даже не знаешь, что такое {1}"
             });
-        
+
         public static string GetCleverReply(string context) =>
             Format(context, new string[]
             {

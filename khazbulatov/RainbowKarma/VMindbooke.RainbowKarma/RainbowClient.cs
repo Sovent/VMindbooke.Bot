@@ -5,10 +5,10 @@ using VMindbooke.SDK.Model;
 
 namespace VMindbooke.RainbowKarma
 {
-    public class RainbowClient
+    public class RainbowClient : IRainbowClient
     {
-        private readonly IVMindbookeClient _vMindbooke;
         private readonly NewUser _newUser;
+        private readonly IVMindbookeClient _vMindbooke;
         private UserCredentials _credentials;
 
         public RainbowClient()
@@ -30,7 +30,7 @@ namespace VMindbooke.RainbowKarma
         public IEnumerable<Post> GetUserPosts(User user) =>
             _vMindbooke.GetUserPosts(user.Id);
 
-        public void AutoRegister() =>
+        public void Register() =>
             _credentials = _vMindbooke.CreateUser(_newUser);
 
         public void Comment(Post post) =>
