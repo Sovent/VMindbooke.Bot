@@ -13,19 +13,19 @@ namespace VMindbooke.Bot.Application
     {
         private RestClient _restClient;
         private RetryPolicy<IRestResponse> _retryPolicy;
-        private readonly BotSettings _settings;
+        private readonly string _serverAddress;
         private readonly ILogger _logger;
 
-        public APIRequestsService(BotSettings settings, ILogger logger)
+        public APIRequestsService(string serverAddress, ILogger logger)
         {
-            _settings = settings;
             _logger = logger;
+            _serverAddress = serverAddress;
             Initialize();
         }
 
         private void Initialize()
         {
-            _restClient = new RestClient(_settings.ServerAddress);
+            _restClient = new RestClient(_serverAddress);
             _retryPolicy = Policy<IRestResponse>
                 .HandleResult(response => !response.IsSuccessful)
                 .WaitAndRetry(new[]
@@ -36,98 +36,32 @@ namespace VMindbooke.Bot.Application
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(5),
                     TimeSpan.FromSeconds(10)
-                });
+                }, (result, span) => _logger.Information($"Retry for request ({result.Result.Request.Method.ToString()}) with resource ({result.Result.Request.Resource})"));
         }
-        
-        private IEnumerable<Post> TryGetPosts()
+
+        private T MakeGetRequest<T>(string resource)
         {
-            var resource = "posts";
             var request = new RestRequest(resource, Method.GET);
             var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            var content = JsonConvert.DeserializeObject<Post[]>(response.Content);
+            var content = JsonConvert.DeserializeObject<T>(response.Content);
             return content;
         }
 
-        private IEnumerable<User> TryGetUsers()
+        private IRestResponse MakePostRequest(string resource, Object requestObject, ICollection<KeyValuePair<string, string>> headers)
         {
-            var resource = "users";
-            var request = new RestRequest(resource, Method.GET);
-            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            var content = JsonConvert.DeserializeObject<User[]>(response.Content);
-            return content;
-        }
-
-        private IEnumerable<Post> TryGetUserPosts(int userId)
-        {
-            var resource = $"users/{userId}/posts";
-            var request = new RestRequest(resource, Method.GET);
-            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            var content = JsonConvert.DeserializeObject<Post[]>(response.Content);
-            return content;
-        }
-
-        private User TryGetUser(int userId)
-        {
-            var resource = $"users/{userId}";
-            var request = new RestRequest(resource, Method.GET);
-            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            var content = JsonConvert.DeserializeObject<User>(response.Content);
-            return content;
-        }
-
-        private bool TryPostComment(int postId, string content)
-        {
-            var resource = $"posts/{postId}/comments";
             var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(new CommentRequest(content));
-            request.AddHeader("Authorization", _settings.UserToken);
-            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            return response.IsSuccessful;
-        }
-
-        private bool TryReplyToComment(int postId, string commentId, string content)
-        {
-            var resource = $"posts/{postId}/comments/{commentId}/replies";
-            var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(new CommentRequest(content));
-            request.AddHeader("Authorization", _settings.UserToken);
-            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            return response.IsSuccessful;
-        }
-
-        private bool TryCreatePost(string title, string content)
-        {
-            var resource = $"users/{_settings.UserId}/posts";
-            var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(new PostRequest(title, content));
-            request.AddHeader("Authorization", _settings.UserToken);
-            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            return response.IsSuccessful;
-        }
-
-        private User TryPostUser(string name)
-        {
-            var resource = $"users";
-            var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(new UserRequest(name));
-            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            var content = JsonConvert.DeserializeObject<User>(response.Content);
-            return content;
+            request.AddJsonBody(requestObject);
+            request.AddHeaders(headers);
+            return _retryPolicy.Execute(() => _restClient.Execute(request));
         }
 
         public IEnumerable<Post> GetPosts()
         {
             try
             {
-                return GetValidCollection<Post>(TryGetPosts());
+                return MakeGetRequest<IEnumerable<Post>>($"posts");
             }
             catch (Exception e)
             {
@@ -140,7 +74,7 @@ namespace VMindbooke.Bot.Application
         {
             try
             {
-                return GetValidCollection<User>(TryGetUsers());
+                return MakeGetRequest<IEnumerable<User>>($"users");
             }
             catch (Exception e)
             {
@@ -153,7 +87,7 @@ namespace VMindbooke.Bot.Application
         {
             try
             {
-                return GetValidCollection<Post>(TryGetUserPosts(userId));
+                return MakeGetRequest<IEnumerable<Post>>($"users/{userId}/posts");
             }
             catch (Exception e)
             {
@@ -166,7 +100,7 @@ namespace VMindbooke.Bot.Application
         {
             try
             {
-                return TryGetUser(userId);
+                return MakeGetRequest<User>($"users/{userId}");
             }
             catch (Exception e)
             {
@@ -175,24 +109,18 @@ namespace VMindbooke.Bot.Application
             }
         }
 
-        private IEnumerable<T> GetValidCollection<T>(IEnumerable<IValidObject> collection)
-        {
-            var validCollection = new List<T>();
-
-            foreach (var element in collection)
-            {
-                if (element.IsValid())
-                    validCollection.Add((T)element);
-            }
-
-            return validCollection;
-        }
-
-        public bool PostComment(int postId, string content)
+        public bool PostComment(int postId, string content, string userToken)
         {
             try
             {
-                return TryPostComment(postId, content);
+                return MakePostRequest(
+                        $"posts/{postId}/comments",
+                        new CommentRequest(content),
+                        new Dictionary<string, string>()
+                        {
+                            {"Authorization", userToken}
+                        })
+                    .IsSuccessful;
             }
             catch (Exception e)
             {
@@ -201,11 +129,18 @@ namespace VMindbooke.Bot.Application
             }
         }
 
-        public bool ReplyToComment(int postId, string commentId, string content)
+        public bool ReplyToComment(int postId, string commentId, string content, string userToken)
         {
             try
             {
-                return TryReplyToComment(postId, commentId, content);
+                return MakePostRequest(
+                        $"posts/{postId}/comments/{commentId}/replies",
+                        new CommentRequest(content),
+                        new Dictionary<string, string>()
+                        {
+                            {"Authorization", userToken}
+                        })
+                    .IsSuccessful;
             }
             catch (Exception e)
             {
@@ -214,11 +149,18 @@ namespace VMindbooke.Bot.Application
             }
         }
 
-        public bool CreatePost(string title, string content)
+        public bool CreatePost(int userId, string userToken, string title, string content)
         {
             try
             {
-                return TryCreatePost(title, content);
+                return MakePostRequest(
+                        $"users/{userId}/posts",
+                        new PostRequest(title, content),
+                        new Dictionary<string, string>()
+                        {
+                            {"Authorization", userToken}
+                        })
+                    .IsSuccessful;
             }
             catch (Exception e)
             {
@@ -231,7 +173,12 @@ namespace VMindbooke.Bot.Application
         {
             try
             {
-                return TryPostUser(name);
+                var response = MakePostRequest(
+                    $"users",
+                    new UserRequest(name),
+                    new Dictionary<string, string>());
+
+                return JsonConvert.DeserializeObject<User>(response.Content);
             }
             catch (Exception e)
             {

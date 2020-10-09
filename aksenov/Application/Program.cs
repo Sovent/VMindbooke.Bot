@@ -10,7 +10,7 @@ namespace Application
         public static void Main(string[] args)
         {
             var logger = new LoggerConfiguration()
-                .WriteTo.File("regular.log")
+                .WriteTo.File("VMindbookeBoostingLog.log")
                 .WriteTo.Console()
                 .CreateLogger();
             Log.Logger = logger;
@@ -47,6 +47,7 @@ namespace Application
                 RecurringJob.Trigger("PostsCopyingByUsers");
                 RecurringJob.Trigger("BoostFinish");
                 Console.ReadKey();
+                Log.Information("Like boosting finished.");
             }
         }
     }

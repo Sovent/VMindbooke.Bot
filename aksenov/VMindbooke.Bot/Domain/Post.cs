@@ -28,13 +28,7 @@ namespace VMindbooke.Bot.Domain
         public Comment[] Comments { get; }
 
         public Like[] Likes { get; }
-
-        public override int GetHashCode()
-        {
-            return (Id ^ AuthorId + Title.GetHashCode() + Content.GetHashCode()) 
-                   ^ (PostingDateUtc.GetHashCode() + Comments.Length * Likes.Length);
-        }
-
+        
         public bool IsValid()
         {
             if (Title == null || Content == null || Comments == null || Likes == null)

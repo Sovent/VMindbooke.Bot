@@ -2,11 +2,11 @@
 
 namespace VMindbooke.Bot.Application
 {
-    public class BoostedUserService
+    public class UserService
     {
         private APIRequestsService _apiService;
 
-        public BoostedUserService(APIRequestsService apiService)
+        public UserService(APIRequestsService apiService)
         {
             _apiService = apiService;
         }

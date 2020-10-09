@@ -10,24 +10,22 @@ namespace VMindbooke.Bot.Application
     {
         private readonly BotSettings _settings;
         private readonly APIRequestsService _apiService;
+        private readonly User _boostedUser;
         private DateTime _currentDate;
-        private User _boostedUser;
         private bool _isRunning;
         
         private readonly ISpamRepository _spamRepository;
-        private readonly IHashesRepository _hashesRepository;
         private readonly IProcessedObjectsRepository _processedObjectsRepository;
 
         private readonly ILogger _logger;
 
-        public LikeBoostingService(BotSettings settings, APIRequestsService apiService, DateTime currentDate, User boostedUser, ISpamRepository spamRepository, IHashesRepository hashesRepository, IProcessedObjectsRepository processedObjectsRepository, ILogger logger)
+        public LikeBoostingService(BotSettings settings, APIRequestsService apiService, DateTime currentDate, User boostedUser, ISpamRepository spamRepository, IProcessedObjectsRepository processedObjectsRepository, ILogger logger)
         {
             _settings = settings;
             _apiService = apiService;
             _currentDate = currentDate;
             _boostedUser = boostedUser;
             _spamRepository = spamRepository;
-            _hashesRepository = hashesRepository;
             _processedObjectsRepository = processedObjectsRepository;
             _logger = logger;
             _isRunning = true;
@@ -47,7 +45,7 @@ namespace VMindbooke.Bot.Application
                 {
                     if (!_processedObjectsRepository.DoesContainCommentedPostWith(post.Id))
                     {
-                        var isSuccessful = _apiService.PostComment(post.Id, _spamRepository.GetRandomComment());
+                        var isSuccessful = _apiService.PostComment(post.Id, _spamRepository.GetRandomComment(), _boostedUser.Token);
                         if (isSuccessful)
                         {
                             _processedObjectsRepository.AddNewCommentedPost(post.Id);
@@ -76,7 +74,7 @@ namespace VMindbooke.Bot.Application
                     {
                         if (!_processedObjectsRepository.DoesContainRepliedCommentWith(comment.Id))
                         {
-                            var isSuccessful = _apiService.ReplyToComment(post.Id, comment.Id, _spamRepository.GetRandomReply());
+                            var isSuccessful = _apiService.ReplyToComment(post.Id, comment.Id, _spamRepository.GetRandomReply(), _boostedUser.Token);
                             if (isSuccessful)
                             {
                                 _processedObjectsRepository.AddNewRepliedComment(comment.Id);
@@ -116,11 +114,11 @@ namespace VMindbooke.Bot.Application
                 {
                     if (!_processedObjectsRepository.DoesContainCopiedPostWith(post.Id))
                     {
-                        var isSuccessful = _apiService.CreatePost(_spamRepository.GetRandomPostTitle(), post.Content);
+                        var isSuccessful = _apiService.CreatePost(_boostedUser.Id, _boostedUser.Token, _spamRepository.GetRandomPostTitle(), post.Content);
                         if (isSuccessful)
                         {
                             _processedObjectsRepository.AddNewCopiedPost(post.Id);
-                            _logger.Information($"Post [{post.Id}] was copied.");
+                            _logger.Information($"Post [{post.Id}] was copied (title was changed).");
                         }
                     }
                 }
@@ -150,24 +148,24 @@ namespace VMindbooke.Bot.Application
 
             if (theMostLikedUserPost == null)
             {
-                _logger.Information($"User was not loaded. The null-object was received.");
+                _logger.Information($"User's post was not loaded. The null-object was received.");
                 return;
             }
 
             if (!_processedObjectsRepository.DoesContainCopiedPostWith(theMostLikedUserPost.Id))
             {
-                var isSuccessful = _apiService.CreatePost(theMostLikedUserPost.Title, theMostLikedUserPost.Content);
+                var isSuccessful = _apiService.CreatePost(_boostedUser.Id, _boostedUser.Token, theMostLikedUserPost.Title, theMostLikedUserPost.Content);
                 if (isSuccessful)
                 {
                     _processedObjectsRepository.AddNewCopiedPost(theMostLikedUserPost.Id);
-                    _logger.Information($"Post [{theMostLikedUserPost.Id}] was copied.");
+                    _logger.Information($"Post [{theMostLikedUserPost.Id}] was completely copied.");
                 }
             }
         }
 
         private Post GetTheMostLikedUserPost(int userId)
         {
-            var posts = _apiService.GetUserPosts(userId);
+            var posts = GetValidCollection<Post>(_apiService.GetUserPosts(userId));
 
             return posts?.OrderByDescending(post => post.Likes.Length)
                 .FirstOrDefault();
@@ -195,67 +193,42 @@ namespace VMindbooke.Bot.Application
                 _logger.Information($"Like boosting completed.");
             }
         }
+        
+        private IEnumerable<T> GetValidCollection<T>(IEnumerable<IValidObject> collection)
+        {
+            var validCollection = new List<T>();
+
+            foreach (var element in collection)
+            {
+                if (element.IsValid())
+                    validCollection.Add((T)element);
+            }
+
+            return validCollection;
+        }
 
         private IEnumerable<Post> GetUnprocessedPosts()
         {
-            var posts = _apiService.GetPosts();
+            var posts = GetValidCollection<Post>(_apiService.GetPosts());
             if (posts == null)
             {
                 _logger.Information($"Posts were not loaded. The null-object was received.");
                 return null;
             }
 
-            var unprocessedPosts = new List<Post>();
-
-            foreach (var post in posts)
-            {
-                if (_hashesRepository.DoesContainPostHashWith(post.Id))
-                {
-                    if (_hashesRepository.GetPostHashBy(post.Id) != post.GetHashCode())
-                    {
-                        _hashesRepository.AddOrUpdatePostHash(post.Id, post.GetHashCode());
-                        unprocessedPosts.Add(post);
-                    }
-                }
-                else
-                {
-                    _hashesRepository.AddOrUpdatePostHash(post.Id, post.GetHashCode());
-                    unprocessedPosts.Add(post);
-                }
-            }
-
-            return unprocessedPosts;
+            return posts;
         }
 
         private IEnumerable<User> GetUnprocessedUsers()
         {
-            var users = _apiService.GetUsers();
+            var users = GetValidCollection<User>(_apiService.GetUsers());
             if (users == null)
             {
                 _logger.Information($"Users were not loaded. The null-object was received.");
                 return null;
             }
-
-            var unprocessedUsers = new List<User>();
-
-            foreach (var user in users)
-            {
-                if (_hashesRepository.DoesContainUserHashWith(user.Id))
-                {
-                    if (_hashesRepository.GetUserHashBy(user.Id) != user.GetHashCode())
-                    {
-                        _hashesRepository.AddOrUpdateUserHash(user.Id, user.GetHashCode());
-                        unprocessedUsers.Add(user);
-                    }
-                }
-                else
-                {
-                    _hashesRepository.AddOrUpdateUserHash(user.Id, user.GetHashCode());
-                    unprocessedUsers.Add(user);
-                }
-            }
-
-            return unprocessedUsers;
+            
+            return users;
         }
     }
 }

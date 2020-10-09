@@ -22,12 +22,6 @@ namespace VMindbooke.Bot.Domain
         
         public IEnumerable<Like> Likes { get; }
 
-        public override int GetHashCode()
-        {
-            int arg = String.IsNullOrEmpty(Token) ? 52596734 : Token.GetHashCode();
-            return (int) (Id * arg) ^ (Name.GetHashCode() * Likes.Count());
-        }
-
         public bool IsValid()
         {
             if (Name == null || Likes == null)

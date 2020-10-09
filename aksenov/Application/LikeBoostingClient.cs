@@ -25,14 +25,14 @@ namespace Application
             {
                 settings = BotSettings.FromJsonFile("appsettings.json");
             }
-            catch (Exception e)
+            catch
             {
                 Log.Error("Settings file 'appsettings.json' not found.");
                 throw new FileNotFoundException("appsettings.json");
             }
             
-            var apiRequestsService = new APIRequestsService(settings, Log.Logger);
-            var userService = new BoostedUserService(apiRequestsService);
+            var apiRequestsService = new APIRequestsService(settings.ServerAddress, Log.Logger);
+            var userService = new UserService(apiRequestsService);
             
             User boostedUser;
             if (userService.DoesUserExists(settings.UserId))
@@ -54,8 +54,7 @@ namespace Application
                 apiRequestsService, 
                 DateTime.Now,
                 boostedUser,
-                new SpamRepository(), 
-                new HashesRepository(), 
+                new SpamRepository(),
                 new ProcessedObjectsRepository(), 
                 Log.Logger);
         }
