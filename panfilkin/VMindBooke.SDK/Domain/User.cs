@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Dynamic;
 
 namespace VMindBooke.SDK.Domain
 {
@@ -8,14 +7,14 @@ namespace VMindBooke.SDK.Domain
         public int Id { get; }
         public string Token { get; }
         public string Name { get; }
-        public IReadOnlyCollection<Like> LikesList { get; }
+        public IReadOnlyList<Like> Likes { get; }
 
-        public User(int id, string token, string name, IReadOnlyCollection<Like> likesList)
+        public User(int id, string token, string name, IReadOnlyList<Like> likes)
         {
             Id = id;
-            Token = token;
+            Token = token ?? "";
             Name = name;
-            LikesList = likesList ?? new List<Like>();
+            Likes = likes ?? new List<Like>();
         }
     }
 }

@@ -1,21 +1,14 @@
-using RestSharp;
-using VMindBooke.SDK.Domain;
-
 namespace VMindBooke.SDK.Application
 {
-    public class VMindBookeClient : IVMindBookeClient
+    public class VMindBookeClient
     {
-        private RestClient _restClient;
         public IUserService UserService { get; }
         public IPostService PostService { get; }
-        
-        public VMindBookeClient(RestClient restClient, UserService userService, PostService postService)
+
+        public VMindBookeClient(IUserService userService, IPostService postService)
         {
-            _restClient = restClient;
             UserService = userService;
             PostService = postService;
         }
-        
-        
     }
 }

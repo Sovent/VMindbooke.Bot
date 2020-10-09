@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarmaFucker", "CarmaFucker\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindBooke.SDK", "VMindBooke.SDK\VMindBooke.SDK.csproj", "{592987B7-0265-47E9-BFF7-B94600E49F96}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarmaFucker.Tests", "CarmaFucker.Tests\CarmaFucker.Tests.csproj", "{28DFE566-F57D-4168-B50C-C5877EE6897E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{592987B7-0265-47E9-BFF7-B94600E49F96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{592987B7-0265-47E9-BFF7-B94600E49F96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{592987B7-0265-47E9-BFF7-B94600E49F96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28DFE566-F57D-4168-B50C-C5877EE6897E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28DFE566-F57D-4168-B50C-C5877EE6897E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28DFE566-F57D-4168-B50C-C5877EE6897E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28DFE566-F57D-4168-B50C-C5877EE6897E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Net;
 using Newtonsoft.Json;
 using Polly;
-using Polly.Retry;
 using RestSharp;
 using VMindBooke.SDK.Domain;
 
@@ -14,25 +12,24 @@ namespace VMindBooke.SDK.Application
     {
         private RestClient _restClient;
         private Policy<IRestResponse> _retryPolicy;
-        
-        // Set retry pow to 2 before prod!
+
         public UserService(RestClient restClient)
         {
             _restClient = restClient;
             _retryPolicy = Policy<IRestResponse>
-                .HandleResult(r => r.StatusCode == HttpStatusCode.InternalServerError)
-                .WaitAndRetry(5, retryAttempt => 
-                    TimeSpan.FromSeconds(Math.Pow(1, retryAttempt)) );
+                .HandleResult(r => r.StatusCode != HttpStatusCode.OK)
+                .WaitAndRetry(15, retryAttempt =>
+                    TimeSpan.FromSeconds(Math.Pow(1, retryAttempt)));
         }
-        
-        public IReadOnlyCollection<User> GetAllUsers()
+
+        public IEnumerable<User> GetAllUsers()
         {
             var request = new RestRequest("users", Method.GET);
             var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            var content = JsonConvert.DeserializeObject<IReadOnlyCollection<User>>(response.Content);
-            return content;
+            var content = JsonConvert.DeserializeObject<List<User>>(response.Content);
+            return content ?? new List<User>();
         }
-        
+
         public User GetUser(int id)
         {
             var request = new RestRequest($"users/{id}", Method.GET);
@@ -41,19 +38,19 @@ namespace VMindBooke.SDK.Application
             return content;
         }
 
-        public IReadOnlyCollection<Post> GetUserPosts(User user)
+        public IEnumerable<Post> GetUserPosts(User user)
         {
             var request = new RestRequest($"users/{user.Id}/posts", Method.GET);
             var response = _retryPolicy.Execute(() => _restClient.Execute(request));
-            var content = JsonConvert.DeserializeObject<IReadOnlyCollection<Post>>(response.Content);
-            return content;
+            var content = JsonConvert.DeserializeObject<List<Post>>(response.Content);
+            return content ?? new List<Post>();
         }
 
         public User CreateUser(string username)
         {
             var request = new RestRequest("users", Method.POST);
             request.AddJsonBody(
-                new 
+                new
                 {
                     name = username
                 });
@@ -62,16 +59,17 @@ namespace VMindBooke.SDK.Application
             return content;
         }
 
-        public void CreatePost(User user, string title, string content)
+        public void CreatePost(User actor, string title, string content)
         {
-            var request = new RestRequest($"users/{user.Id}/posts", Method.POST);
+            var request = new RestRequest($"users/{actor.Id}/posts", Method.POST);
+            request.AddHeader("Authorization", actor.Token);
+
             request.AddJsonBody(
-                new 
+                new
                 {
-                    title = title,
-                    content = content,
+                    title, content,
                 });
-            var response = _retryPolicy.Execute(() => _restClient.Execute(request));
+            _retryPolicy.Execute(() => _restClient.Execute(request));
         }
 
         public User GetAuthorizedUser(int id, string token)
@@ -81,7 +79,7 @@ namespace VMindBooke.SDK.Application
                 rawUser.Id,
                 token,
                 rawUser.Name,
-                rawUser.LikesList);
+                rawUser.Likes);
             return authorizedUser;
         }
 
@@ -92,7 +90,7 @@ namespace VMindBooke.SDK.Application
                 user.Id,
                 user.Token,
                 user.Name,
-                rawUser.LikesList);
+                rawUser.Likes);
             return authorizedUser;
         }
     }
