@@ -4,7 +4,6 @@ using Polly;
 using Polly.Retry;
 using RestSharp;
 using Serilog;
-using Serilog.Core;
 
 namespace VmindbookeSDK
 {

@@ -10,8 +10,8 @@ namespace VmindbookeSDK.Entities
         public int AuthorId { get; }
         public string Content { get; }
         public DateTime PostingDateUtc { get; }
-        public IEnumerable<Like> Likes { get; }
         public IEnumerable<Comment> Replies { get; }
+        public IEnumerable<Like> Likes { get; }
 
         public Comment(Guid id, int authorId, string title, string content,
             DateTime postingDateUtc, IEnumerable<Like> likes, IEnumerable<Comment> comments)

@@ -15,9 +15,7 @@ namespace ShitBot
                .CreateLogger();
            
            Log.Logger = logger;
-           Log.Logger.Information("Check");
-           Console.WriteLine("csccsc");
-           var service = new ShitBotService();
+           var service = new ShitBotService(new CleverMessageGenerator());
            service.StartFarming();
 
         }

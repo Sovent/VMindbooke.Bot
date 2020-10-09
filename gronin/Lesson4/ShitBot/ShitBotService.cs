@@ -26,10 +26,10 @@ namespace ShitBot
         private readonly int _take;
         private readonly VmindBookeClient _client;
 
-        public ShitBotService()
+        public ShitBotService(CleverMessageGenerator messageGenerator)
         {
             IConfiguration cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-            _bot = new ShitBotClient();
+            _bot = new ShitBotClient(messageGenerator);
             _client = new VmindBookeClient(cfg["ApiBaseUrl"]);
             _skip = Int32.Parse(cfg["skip"]);
             _take = Int32.Parse(cfg["take"]);

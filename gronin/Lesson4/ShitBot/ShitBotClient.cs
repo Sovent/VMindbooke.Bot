@@ -12,12 +12,12 @@ namespace ShitBot
             public readonly UserCredentials _credentials;
             private IMessageGenerator _messageGenerator;
 
-            public ShitBotClient()
+            public ShitBotClient(IMessageGenerator messageGenerator)
             {
                 IConfiguration cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
                 _vMindbooke = new VmindBookeClient(cfg["ApiBaseUrl"]);
                 _credentials = new UserCredentials(int.Parse(cfg["UserId"]), cfg["UserToken"]);
-                _messageGenerator = new CleverMessageGenerator();
+                _messageGenerator = messageGenerator;
             }
 
             public void Comment(Post post) =>
