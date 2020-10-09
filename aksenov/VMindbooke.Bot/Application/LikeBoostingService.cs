@@ -9,7 +9,7 @@ namespace VMindbooke.Bot.Application
     public class LikeBoostingService
     {
         private readonly BotSettings _settings;
-        private readonly APIRequestsService _apiService;
+        private readonly IAPIRequestsService _apiService;
         private readonly User _boostedUser;
         private DateTime _currentDate;
         private bool _isRunning;
@@ -19,7 +19,7 @@ namespace VMindbooke.Bot.Application
 
         private readonly ILogger _logger;
 
-        public LikeBoostingService(BotSettings settings, APIRequestsService apiService, DateTime currentDate, User boostedUser, ISpamRepository spamRepository, IProcessedObjectsRepository processedObjectsRepository, ILogger logger)
+        public LikeBoostingService(BotSettings settings, IAPIRequestsService apiService, DateTime currentDate, User boostedUser, ISpamRepository spamRepository, IProcessedObjectsRepository processedObjectsRepository, ILogger logger)
         {
             _settings = settings;
             _apiService = apiService;
@@ -165,7 +165,7 @@ namespace VMindbooke.Bot.Application
 
         private Post GetTheMostLikedUserPost(int userId)
         {
-            var posts = GetValidCollection<Post>(_apiService.GetUserPosts(userId));
+            var posts = _apiService.GetUserPosts(userId).GetValidCollection<Post>();
 
             return posts?.OrderByDescending(post => post.Likes.Length)
                 .FirstOrDefault();
@@ -193,23 +193,10 @@ namespace VMindbooke.Bot.Application
                 _logger.Information($"Like boosting completed.");
             }
         }
-        
-        private IEnumerable<T> GetValidCollection<T>(IEnumerable<IValidObject> collection)
-        {
-            var validCollection = new List<T>();
-
-            foreach (var element in collection)
-            {
-                if (element.IsValid())
-                    validCollection.Add((T)element);
-            }
-
-            return validCollection;
-        }
 
         private IEnumerable<Post> GetUnprocessedPosts()
         {
-            var posts = GetValidCollection<Post>(_apiService.GetPosts());
+            var posts = _apiService.GetPosts().GetValidCollection<Post>();
             if (posts == null)
             {
                 _logger.Information($"Posts were not loaded. The null-object was received.");
@@ -221,7 +208,7 @@ namespace VMindbooke.Bot.Application
 
         private IEnumerable<User> GetUnprocessedUsers()
         {
-            var users = GetValidCollection<User>(_apiService.GetUsers());
+            var users = _apiService.GetUsers().GetValidCollection<User>();
             if (users == null)
             {
                 _logger.Information($"Users were not loaded. The null-object was received.");

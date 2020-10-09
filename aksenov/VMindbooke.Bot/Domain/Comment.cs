@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace VMindbooke.Bot.Domain
 {
@@ -31,6 +30,12 @@ namespace VMindbooke.Bot.Domain
         {
             if (Id == null || Content == null || Replies == null || Likes == null)
                 return false;
+            
+            foreach (var reply in Replies)
+            {
+                if (!reply.IsValid())
+                    return false;
+            }
 
             return true;
         }

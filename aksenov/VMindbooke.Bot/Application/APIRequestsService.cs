@@ -9,7 +9,7 @@ using VMindbooke.Bot.Domain;
 
 namespace VMindbooke.Bot.Application
 {
-    public class APIRequestsService
+    public class APIRequestsService : IAPIRequestsService
     {
         private RestClient _restClient;
         private RetryPolicy<IRestResponse> _retryPolicy;
@@ -169,7 +169,7 @@ namespace VMindbooke.Bot.Application
             }
         }
 
-        public User PostUser(string name)
+        public User CreateUser(string name)
         {
             try
             {

@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindbooke.Bot", "VMindbook
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{4BF1B577-4C7F-49B7-ACB8-E9CE0A1CE2E3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindbooke.Bot.UnitTests", "VMindbooke.Bot.UnitTests\VMindbooke.Bot.UnitTests.csproj", "{49FB2864-E802-48E4-B9BD-9EBF5997B593}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{4BF1B577-4C7F-49B7-ACB8-E9CE0A1CE2E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4BF1B577-4C7F-49B7-ACB8-E9CE0A1CE2E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4BF1B577-4C7F-49B7-ACB8-E9CE0A1CE2E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49FB2864-E802-48E4-B9BD-9EBF5997B593}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49FB2864-E802-48E4-B9BD-9EBF5997B593}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49FB2864-E802-48E4-B9BD-9EBF5997B593}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49FB2864-E802-48E4-B9BD-9EBF5997B593}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

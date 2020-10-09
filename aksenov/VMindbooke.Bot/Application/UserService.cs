@@ -22,7 +22,7 @@ namespace VMindbooke.Bot.Application
 
         public User RegisterUser(string userName)
         {
-            return _apiService.PostUser(userName);
+            return _apiService.CreateUser(userName);
         }
     }
 }
