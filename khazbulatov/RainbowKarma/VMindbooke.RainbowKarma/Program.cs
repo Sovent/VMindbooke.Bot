@@ -1,12 +1,17 @@
-﻿using System;
+﻿using Serilog;
 
 namespace VMindbooke.RainbowKarma
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.File("rainbow.log")
+                .WriteTo.Console()
+                .CreateLogger();
             
+            new RainbowKarmaBot().Run();
         }
     }
 }
