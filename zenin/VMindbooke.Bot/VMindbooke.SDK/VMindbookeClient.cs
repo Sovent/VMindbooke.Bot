@@ -4,8 +4,6 @@ using RestSharp;
 using Newtonsoft.Json;
 using Polly;
 using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 
 namespace VMindbooke.SDK
 {
@@ -17,36 +15,55 @@ namespace VMindbooke.SDK
                 .WriteTo.File("client.log")
                 .WriteTo.Console()
                 .CreateLogger();
+            
             _restClient = new RestClient(vmindbookeBaseUrl);
             retryMaxCount = 3;
         }
-
         public IReadOnlyCollection<User> GetUsers()
         {
             var resource = "users";
-            var request = new RestRequest(resource, Method.GET);
-            
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(r => !r.IsSuccessful)
-                .Retry(retryMaxCount, 
-                    (result, i) => Log.Information($"{i} retry of GET to /{resource}"));
-            var response = retryPolicy.Execute(() => _restClient.Execute(request));
-
-            User[] content = null;
-            try
-            {
-                content = JsonConvert.DeserializeObject<User[]>(response.Content);
-            }
-            catch
-            {
-                
-            }
-            return content;
+            return GET<IReadOnlyCollection<User>>(resource);
         }
-
         public User GetUser(int userId)
         {
             var resource = $"users/{userId}";
+            return GET<User>(resource);
+        }
+        public Post GetPost(int postId)
+        {
+            var resource = $"posts/{postId}";
+            return GET<Post>(resource);
+        }
+        public IReadOnlyCollection<Post> GetPosts()
+        {
+            var resource = $"posts";
+            return GET<IReadOnlyCollection<Post>>(resource);
+        }
+
+        public IReadOnlyCollection<Post> GetUserPosts(int userId)
+        {
+            var resource = $"users/{userId}/posts";
+            return GET<IReadOnlyCollection<Post>>(resource);
+        }
+        
+        public void Comment(CommentContent commentContent, int postId, string token)
+        {
+            var resource = $"posts/{postId}/comments";
+            POST<string>(resource, commentContent, token);
+        }
+        public void Reply(ReplyContent replyContent, int postId, Guid commentId, string token)
+        {
+            var resource = $"posts/{postId}/comments/{commentId}/replies";
+            POST<int>(resource, replyContent, token);
+        }
+        public int Post(PostContent postContent, int userId, string token)
+        {
+            var resource = $"users/{userId}/posts";
+            return POST<int>(resource, postContent, token);
+        }
+
+        private T GET<T>(string resource)
+        {
             var request = new RestRequest(resource, Method.GET);
             
             var retryPolicy = Policy<IRestResponse>
@@ -54,44 +71,18 @@ namespace VMindbooke.SDK
                 .Retry(retryMaxCount, 
                     (result, i) => Log.Information($"{i} retry of GET to /{resource}"));
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
-            
-            User content = null;
+
+            var content = default(T);
             try
-            {
-                content = JsonConvert.DeserializeObject<User>(response.Content);
-            }
+            { content = JsonConvert.DeserializeObject<T>(response.Content); }
             catch
-            {
-                
-            }
+            { Log.Error($"Retry count ({retryMaxCount}) of GET to /{resource} exceeded");}
             return content;
         }
-
-        public Post GetPost(int postId)
+        private T POST<T>(string resource, IContent bodyContent, string token)
         {
-            throw new NotImplementedException();
-        }
-
-        public IReadOnlyCollection<Post> GetPosts()
-        {
-            throw new NotImplementedException();
-        }
-
-        public int Comment(CommentContent commentContent, int postId, string token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int Reply(ReplyContent replyContent, int postId, int commentId, string token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int Post(PostContent postContent, int userId, string token)
-        {
-            var resource = $"users/{userId}/posts";
             var request = new RestRequest(resource, Method.POST);
-            request.AddJsonBody(postContent);
+            request.AddJsonBody(bodyContent);
             request.AddHeader("Authorization", token);
             
             var retryPolicy = Policy<IRestResponse>
@@ -99,25 +90,12 @@ namespace VMindbooke.SDK
                 .Retry(retryMaxCount, 
                     (result, i) => Log.Information($"{i} retry of POST to /{resource}"));
             var response = retryPolicy.Execute(() => _restClient.Execute<int>(request));
-            var content = 0;
+            var content = default(T);
             try
-            {
-                content = JsonConvert.DeserializeObject<int>(response.Content);
-            }
-            catch (Exception e)
-            {
-                Log.Error($"Retry count ({retryMaxCount}) on POST by userID {userId} exceeded");
-            }
+            { content = JsonConvert.DeserializeObject<T>(response.Content); }
+            catch
+            { Log.Error($"Retry count ({retryMaxCount}) of POST to /{resource} exceeded"); }
             return content;
-        }
-
-        public void GET<T>()
-        {
-            
-        }
-        public void POST<T>()
-        {
-            
         }
         
         private readonly RestClient _restClient;

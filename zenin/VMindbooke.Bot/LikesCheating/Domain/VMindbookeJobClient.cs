@@ -1,43 +1,56 @@
-using VMindbooke.SDK;
+using System;
+using Serilog;
 using Hangfire;
-using System.Collections.Generic;
+using Hangfire.MemoryStorage;
 
 namespace LikesCheating.Domain
 {
     public class VMindbookeJobClient : IVMindbookeJobClient
     {
-        public VMindbookeJobClient(VMindbookeClient client)
+        public VMindbookeJobClient()
         {
-            _client = client;
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.File("job_client.log")
+                .WriteTo.Console()
+                .CreateLogger();
+            
+            _cheatEngine = new Cheating();
         }
-        public void StartJobs(int userId, string token, Thresholds thresholds)
+
+        public void StartCheatingJobs(int userId, string token)
         {
-            User targetUser = _client.GetUser(userId);
-            IReadOnlyCollection<User> users = _client.GetUsers();
-            IReadOnlyCollection<Post> posts = _client.GetPosts();
-            
-            //RecurringJob.AddOrUpdate<VMindbookeClient>(
-                //client => posts = client.GetPosts(),
-                //Cron.Minutely);
-            
-            foreach (var post in posts)
+            GlobalConfiguration.Configuration.UseMemoryStorage();
+            RecurringJob.AddOrUpdate(
+                () => DoCheatingJobs(userId, token),
+                Cron.Minutely);
+
+            using (var backgroundServer = new BackgroundJobServer())
             {
-                RecurringJob.AddOrUpdate<Cheating>(
-                    cheating => cheating.CommentIfLikesMoreThanThreshold(
-                        post, thresholds.PostThresholdToComment, token),
-                    Cron.Minutely);
-                foreach (var comment in post.Comments)
-                {
-                    
-                }
+                Log.Information("Background server started.");
+                while (!_endCheating);
             }
         }
 
-        public void StopJobs()
+        public void StopCheatingJobs()
         {
-            
+            Log.Information("Background server stopping...");
+            _endCheating = true;
+        }
+        
+        public void DoCheatingJobs(int userId, string token)
+        {
+            if (!_cheatEngine.CheckUserReachedLikesThreshold(userId))
+            {
+                try
+                { _cheatEngine.CommentIfLikesMoreThanThreshold(token); }
+                catch (Exception e)
+                { Log.Error($"Method 'CommentIfLikesMoreThanThreshold' down: {e}"); }
+            }
+            else
+                Log.Information($"Target likes count on user {userId} reached");
         }
 
-        private readonly VMindbookeClient _client;
+        private static bool _endCheating;
+        private readonly Cheating _cheatEngine;
     }
 }

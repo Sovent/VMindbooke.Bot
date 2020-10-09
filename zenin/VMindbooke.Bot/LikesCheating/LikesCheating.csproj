@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <PackageReference Include="Hangfire" Version="1.7.14" />
+      <PackageReference Include="Hangfire.MemoryStorage" Version="1.7.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0-rc.1.20451.14" />
       <PackageReference Include="Serilog" Version="2.10.1-dev-01249" />
       <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0-dev-00839" />
@@ -17,8 +18,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Application\appsettings.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <None Update="Domain\appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
 

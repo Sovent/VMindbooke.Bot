@@ -5,17 +5,17 @@ namespace VMindbooke.SDK
 {
     public class Comment
     {
-        public Comment(string id, int authorId, string content, DateTime date,
+        public Comment(Guid id, int authorId, string content, DateTime placingDateUtc,
             IReadOnlyCollection<Reply> replies, IReadOnlyCollection<Like> likes)
         {
             Id = id;
             AuthorId = authorId;
             Content = content;
-            PlacingDateUtc = date;
+            PlacingDateUtc = placingDateUtc;
             Replies = replies;
             Likes = likes;
         }
-        public string Id { get; }
+        public Guid Id { get; }
         public int AuthorId { get; }
         public string Content { get; }
         public DateTime PlacingDateUtc { get; }

@@ -4,16 +4,18 @@ namespace LikesCheating.Domain
     {
         public int PostThresholdToComment { get; }
         public int PostThresholdToDuplicate { get; }
-        public int CommentThreshold { get; }
-        public int UserThreshold { get; }
+        public int CommentThresholdToReply { get; }
+        public int UserSuccessPostThreshold { get; }
+        public int UserDailyTargetThreshold { get; }
 
         public Thresholds(int postThresholdToComment, int postThresholdToDuplicate,
-            int commentThreshold, int userThreshold)
+            int commentThresholdToReply, int userSuccessPostThreshold, int userDailyTargetThreshold)
         {
             PostThresholdToComment = postThresholdToComment;
             PostThresholdToDuplicate = postThresholdToDuplicate;
-            CommentThreshold = commentThreshold;
-            UserThreshold = userThreshold;
+            CommentThresholdToReply = commentThresholdToReply;
+            UserSuccessPostThreshold = userSuccessPostThreshold;
+            UserDailyTargetThreshold = userDailyTargetThreshold;
         }
     }
 }

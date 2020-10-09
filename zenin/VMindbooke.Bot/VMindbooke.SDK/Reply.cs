@@ -6,7 +6,6 @@ namespace VMindbooke.SDK
         {
             Content = content;
         }
-
         public string Content { get; }
     }
 }

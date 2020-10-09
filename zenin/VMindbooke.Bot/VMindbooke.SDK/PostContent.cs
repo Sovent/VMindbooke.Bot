@@ -1,6 +1,6 @@
 namespace VMindbooke.SDK
 {
-    public class PostContent
+    public class PostContent : IContent
     {
         public string Title { get; }
         public string Content { get; }

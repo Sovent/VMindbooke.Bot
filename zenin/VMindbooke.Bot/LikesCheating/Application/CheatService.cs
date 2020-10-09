@@ -1,7 +1,5 @@
 using System;
 using LikesCheating.Domain;
-using Microsoft.Extensions.Configuration;
-using VMindbooke.SDK;
 
 namespace LikesCheating.Application
 {
@@ -9,28 +7,18 @@ namespace LikesCheating.Application
     {
         public CheatService()
         {
-            _configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-            var client = new VMindbookeClient(_configuration["VMindbookeUrl"]);
-            _jobClient = new VMindbookeJobClient(client);
+            _jobClient = new VMindbookeJobClient();
         }
-        public void StartCheating(int userId)
+        public void StartCheating(int userId, string token)
         {
-            var token = _configuration["VMindbooleUserToken"];
-            var thresholds = new Thresholds(
-                Convert.ToInt32(_configuration["PostThresholdToComment"]),
-                Convert.ToInt32(_configuration["PostThresholdToDuplicate"]),
-                Convert.ToInt32(_configuration["CommentThreshold"]),
-                Convert.ToInt32(_configuration["UserThreshold"])
-                );
-            _jobClient.StartJobs(userId, token, thresholds);
+            _jobClient.StartCheatingJobs(userId, token);
         }
 
         public void StopCheating()
         {
-            _jobClient.StopJobs();
+            _jobClient.StopCheatingJobs();
         }
 
-        private readonly IConfigurationRoot _configuration;
         private  readonly VMindbookeJobClient _jobClient;
     }
 }

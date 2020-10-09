@@ -4,15 +4,14 @@ namespace VMindbooke.SDK
 {
     public class Like
     {
-        public Like(string id, int authorId, DateTime date)
+        public Like(Guid id, int authorId, DateTime placingDateUtc)
         {
             Id = id;
             AuthorId = authorId;
-            PlacingDateUtc = date;
+            PlacingDateUtc = placingDateUtc;
         }
-        public string Id { get; }
+        public Guid Id { get; }
         public int AuthorId { get; }
         public DateTime PlacingDateUtc { get; }
-        
     }
 }
