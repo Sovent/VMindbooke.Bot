@@ -15,7 +15,7 @@ namespace ShitBot
                .CreateLogger();
            
            Log.Logger = logger;
-           var service = new ShitBotService(new CleverMessageGenerator());
+           var service = new ShitBotService();
            service.StartFarming();
 
         }

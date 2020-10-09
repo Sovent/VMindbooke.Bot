@@ -26,10 +26,10 @@ namespace ShitBot
         private readonly int _take;
         private readonly VmindBookeClient _client;
 
-        public ShitBotService(CleverMessageGenerator messageGenerator)
+        public ShitBotService()
         {
             IConfiguration cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-            _bot = new ShitBotClient(messageGenerator);
+            _bot = new ShitBotClient(new CleverMessageGenerator());
             _client = new VmindBookeClient(cfg["ApiBaseUrl"]);
             _skip = Int32.Parse(cfg["skip"]);
             _take = Int32.Parse(cfg["take"]);
@@ -119,18 +119,38 @@ namespace ShitBot
         public void StartFarming()
         {
             GlobalConfiguration.Configuration.UseMemoryStorage();
-            RecurringJob.AddOrUpdate(()=>CommentOnPopularPosts(),Cron.Minutely);
-            RecurringJob.AddOrUpdate(()=>ReplyOnPopularComment(),Cron.Minutely);
-            RecurringJob.AddOrUpdate(()=>RepostOfPopularPost(),Cron.Minutely);
-            RecurringJob.AddOrUpdate(()=>StealPopularUsersPost(),Cron.Minutely);
-            RecurringJob.AddOrUpdate(()=>RefreshData(),Cron.Hourly);
-           
+            RecurringJob.AddOrUpdate("1",()=>CommentOnPopularPosts(),Cron.Minutely);
+            RecurringJob.AddOrUpdate("2",()=>ReplyOnPopularComment(),Cron.Minutely);
+            RecurringJob.AddOrUpdate("3",()=>RepostOfPopularPost(),Cron.Minutely);
+            RecurringJob.AddOrUpdate("4",()=>StealPopularUsersPost(),Cron.Minutely);
+            RecurringJob.AddOrUpdate("5",()=>RefreshData(),Cron.Hourly);
+
+            var currentDay = DateTime.Now.Day;
             using (var backgroundServer = new BackgroundJobServer())
             {
                 Log.Logger.Information("Job Started");
-                while (!IsTimeToStop())
+                while (true)
                 {
                     Thread.Sleep(60000);
+                    if (IsTimeToStop())
+                    {
+                        RecurringJob.RemoveIfExists("1");
+                        RecurringJob.RemoveIfExists("2");
+                        RecurringJob.RemoveIfExists("3");
+                        RecurringJob.RemoveIfExists("4");
+                        
+                    }
+
+                    if (currentDay != DateTime.Now.Day)
+                    {
+                        currentDay = DateTime.Now.Day;
+                        RecurringJob.AddOrUpdate("1",()=>CommentOnPopularPosts(),Cron.Minutely);
+                        RecurringJob.AddOrUpdate("2",()=>ReplyOnPopularComment(),Cron.Minutely);
+                        RecurringJob.AddOrUpdate("3",()=>RepostOfPopularPost(),Cron.Minutely);
+                        RecurringJob.AddOrUpdate("4",()=>StealPopularUsersPost(),Cron.Minutely);
+                        RecurringJob.AddOrUpdate("5",()=>RefreshData(),Cron.Hourly);
+                        
+                    }
                 }
                 Log.Logger.Information("Job Done");
             }
