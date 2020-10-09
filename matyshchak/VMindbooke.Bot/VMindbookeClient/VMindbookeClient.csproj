@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Hangfire" Version="1.7.15" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0-rc.1.20451.14" />
+      <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+      <PackageReference Include="Polly" Version="7.2.1" />
+      <PackageReference Include="RestSharp" Version="106.11.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\VMindbookeBooster\VMindbookeBooster.csproj" />
+    </ItemGroup>
+
+</Project>
