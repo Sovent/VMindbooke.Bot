@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Serilog.Core;
+using Serilog;
 using VMindbooke.Bot.Domain;
 
 namespace VMindbooke.Bot.Application
@@ -17,9 +17,9 @@ namespace VMindbooke.Bot.Application
         private readonly IHashesRepository _hashesRepository;
         private readonly IProcessedObjectsRepository _processedObjectsRepository;
 
-        private readonly Logger _logger;
+        private readonly ILogger _logger;
 
-        public LikeBoostingService(BotSettings settings, APIRequestsService apiService, DateTime currentDate, ISpamRepository spamRepository, IHashesRepository hashesRepository, IProcessedObjectsRepository processedObjectsRepository, Logger logger)
+        public LikeBoostingService(BotSettings settings, APIRequestsService apiService, DateTime currentDate, ISpamRepository spamRepository, IHashesRepository hashesRepository, IProcessedObjectsRepository processedObjectsRepository, ILogger logger)
         {
             _settings = settings;
             _apiService = apiService;
@@ -65,7 +65,9 @@ namespace VMindbooke.Bot.Application
 
             foreach (var post in unprocessedPosts)
             {
-                foreach (var comment in post.Comments)
+                var allPostComments = GetAllComments(post.Comments);
+                
+                foreach (var comment in allPostComments)
                 {
                     if (comment.Likes.Count(like => like.PlacingDateUtc.Date == DateTime.Now.Date) >=
                         _settings.LikeLimitForCommentToMakeReply)
@@ -82,6 +84,20 @@ namespace VMindbooke.Bot.Application
                     }
                 }
             }
+        }
+
+        private IEnumerable<CommentToReply> GetAllComments(IEnumerable<Comment> comments)
+        {
+            var result = new List<CommentToReply>();
+
+            foreach (var comment in comments)
+            {
+                result.Add(new CommentToReply(comment.Id, comment.Likes));
+                if (comment.Replies.Length != 0)
+                    result.AddRange(GetAllComments(comment.Replies));
+            }
+
+            return result;
         }
 
         public void PostsCopyingByLikesScenario()
@@ -124,6 +140,35 @@ namespace VMindbooke.Bot.Application
                     CopyTheMostLikedPost(user.Id);
                 }
             }
+        }
+
+        private void CopyTheMostLikedPost(int userId)
+        {
+            var theMostLikedUserPost = GetTheMostLikedUserPost(userId);
+
+            if (theMostLikedUserPost == null)
+            {
+                _logger.Information($"User was not loaded. The null-object was received.");
+                return;
+            }
+
+            if (!_processedObjectsRepository.DoesContainCopiedPostWith(theMostLikedUserPost.Id))
+            {
+                var isSuccessful = _apiService.CreatePost(theMostLikedUserPost.Title, theMostLikedUserPost.Content);
+                if (isSuccessful)
+                {
+                    _processedObjectsRepository.AddNewCopiedPost(theMostLikedUserPost.Id);
+                    _logger.Information($"Post [{theMostLikedUserPost.Id}] was copied.");
+                }
+            }
+        }
+
+        private Post GetTheMostLikedUserPost(int userId)
+        {
+            var posts = _apiService.GetUserPosts(userId);
+
+            return posts?.OrderByDescending(post => post.Likes.Length)
+                .FirstOrDefault();
         }
 
         public void BoostFinishScenario()
@@ -209,35 +254,6 @@ namespace VMindbooke.Bot.Application
             }
 
             return unprocessedUsers;
-        }
-
-        private void CopyTheMostLikedPost(int userId)
-        {
-            var theMostLikedUserPost = GetTheMostLikedUserPost(userId);
-
-            if (theMostLikedUserPost == null)
-            {
-                _logger.Information($"User was not loaded. The null-object was received.");
-                return;
-            }
-
-            if (!_processedObjectsRepository.DoesContainCopiedPostWith(theMostLikedUserPost.Id))
-            {
-                var isSuccessful = _apiService.CreatePost(theMostLikedUserPost.Title, theMostLikedUserPost.Content);
-                if (isSuccessful)
-                {
-                     _processedObjectsRepository.AddNewCopiedPost(theMostLikedUserPost.Id);
-                     _logger.Information($"Post [{theMostLikedUserPost.Id}] was copied.");
-                }
-            }
-        }
-
-        private Post GetTheMostLikedUserPost(int userId)
-        {
-            var posts = _apiService.GetUserPosts(userId);
-
-            return posts?.OrderByDescending(post => post.Likes.Length)
-                .FirstOrDefault();
         }
     }
 }

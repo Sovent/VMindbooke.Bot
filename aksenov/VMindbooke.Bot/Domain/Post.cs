@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace VMindbooke.Bot.Domain
 {
-    public class Post
+    public class Post: IValidObject
     {
         public Post(int id, int authorId, string title, string content, DateTime postingDateUtc, Comment[] comments, Like[] likes)
         {
@@ -34,6 +33,14 @@ namespace VMindbooke.Bot.Domain
         {
             return (Id ^ AuthorId + Title.GetHashCode() + Content.GetHashCode()) 
                    ^ (PostingDateUtc.GetHashCode() + Comments.Length * Likes.Length);
+        }
+
+        public bool IsValid()
+        {
+            if (Title == null || Content == null || Comments == null || Likes == null)
+                return false;
+
+            return true;
         }
     }
 }

@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using Polly;
 using Polly.Retry;
 using RestSharp;
-using Serilog.Core;
+using Serilog;
 using VMindbooke.Bot.Domain;
 
 namespace VMindbooke.Bot.Application
@@ -14,9 +14,9 @@ namespace VMindbooke.Bot.Application
         private RestClient _restClient;
         private RetryPolicy<IRestResponse> _retryPolicy;
         private readonly BotSettings _settings;
-        private readonly Logger _logger;
+        private readonly ILogger _logger;
 
-        public APIRequestsService(BotSettings settings, Logger logger)
+        public APIRequestsService(BotSettings settings, ILogger logger)
         {
             _settings = settings;
             _logger = logger;
@@ -30,6 +30,15 @@ namespace VMindbooke.Bot.Application
                 .HandleResult(response => !response.IsSuccessful)
                 .WaitAndRetry(new[]
                 {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(1),
@@ -108,7 +117,7 @@ namespace VMindbooke.Bot.Application
         {
             try
             {
-                return TryGetPosts();
+                return GetValidCollection<Post>(TryGetPosts());
             }
             catch (Exception e)
             {
@@ -121,7 +130,7 @@ namespace VMindbooke.Bot.Application
         {
             try
             {
-                return TryGetUsers();
+                return GetValidCollection<User>(TryGetUsers());
             }
             catch (Exception e)
             {
@@ -134,7 +143,7 @@ namespace VMindbooke.Bot.Application
         {
             try
             {
-                return TryGetUserPosts(userId);
+                return GetValidCollection<Post>(TryGetUserPosts(userId));
             }
             catch (Exception e)
             {
@@ -154,6 +163,19 @@ namespace VMindbooke.Bot.Application
                 _logger.Error($"An error occurred while loading a user: {e.Message}");
                 return null;
             }
+        }
+
+        private IEnumerable<T> GetValidCollection<T>(IEnumerable<IValidObject> collection)
+        {
+            var validCollection = new List<T>();
+
+            foreach (var element in collection)
+            {
+                if (element.IsValid())
+                    validCollection.Add((T)element);
+            }
+
+            return validCollection;
         }
 
         public bool PostComment(int postId, string content)

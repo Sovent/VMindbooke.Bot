@@ -1,10 +1,10 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace VMindbooke.Bot.Domain
 {
-    public class User
+    public class User: IValidObject
     {
         public User(int id, string token, string name, IEnumerable<Like> likes)
         {
@@ -24,7 +24,16 @@ namespace VMindbooke.Bot.Domain
 
         public override int GetHashCode()
         {
-            return (Id * Token.GetHashCode()) ^ (Name.GetHashCode() * Likes.Count());
+            int arg = String.IsNullOrEmpty(Token) ? 52596734 : Token.GetHashCode();
+            return (int) (Id * arg) ^ (Name.GetHashCode() * Likes.Count());
+        }
+
+        public bool IsValid()
+        {
+            if (Name == null || Likes == null)
+                return false;
+
+            return true;
         }
     }
 }
