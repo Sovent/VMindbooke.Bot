@@ -13,13 +13,12 @@ namespace Usage
         public int MostLikedCommentThreshold { get; }
         public int StopBoostThreshold { get; }
         public string LogName { get; }
-        
-        public string Local { get; }
-        
-        public int Retry { get; }
 
-        
-        //TODO find how Convert.ToInt32 convert to normal serial  
+        public string Local { get; }
+
+        public int Retry { get; }
+        public int UserIdMaxValue { get; }
+
         public Configuration(string config)
         {
             var configuration = new ConfigurationBuilder().AddJsonFile(config).Build();
@@ -32,7 +31,8 @@ namespace Usage
             StopBoostThreshold = Convert.ToInt32(configuration["Stop Boost Threshold"]);
             LogName = configuration["Log File Name"];
             Local = configuration["Local"];
-            Retry = Convert.ToInt32(configuration["Retry"]) ;
+            Retry = Convert.ToInt32(configuration["Retry"]);
+            UserIdMaxValue = Convert.ToInt32(configuration["UserIdMaxValue"]);
         }
     }
 }

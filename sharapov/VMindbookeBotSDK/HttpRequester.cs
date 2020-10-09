@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -8,7 +9,7 @@ using VMindbookeBot;
 
 namespace VMindbookeBotSDK
 {
-    public class HttpRequester
+    public class HttpRequester : IHttpRequester
     {
         public string AuthToken { get; }
         
@@ -16,7 +17,6 @@ namespace VMindbookeBotSDK
 
         private readonly IRestClient _restClient;
         
-
         public HttpRequester(int userId, string authToken, IRestClient restClient)
         {
             AuthToken = authToken;
@@ -89,20 +89,37 @@ namespace VMindbookeBotSDK
                 ? Result<int, StatusCode>.None(StatusCode.InternalServerError) 
                 : Result<int, StatusCode>.Some(newPostId, StatusCode.Ok);
         }
+        
+        public Result<Post[], StatusCode> GetUserPosts(int userId)
+        {
+            var request = CreateRequestWithAuthorizationHeader($"/users/{userId}/posts", Method.GET);
+            var response = _restClient.Execute(request);
+            if (response.StatusCode == ErrorCode())
+            {
+                return Result<Post[], StatusCode>.None(StatusCode.InternalServerError);
+            }
+            var userPosts = JsonConvert
+                .DeserializeObject<Post[]>(response.Content,
+                    new IsoDateTimeConverter {DateTimeFormat = TimeFormat});
+            return response.StatusCode == ErrorCode() 
+                ? Result<Post[], StatusCode>.None(StatusCode.InternalServerError) 
+                : Result<Post[], StatusCode>.Some(userPosts, StatusCode.Ok);
+        }
 
-        public Result<IEnumerable<Like>, StatusCode> GetUserInfo(int userId)
+        public Result<UserInfoByUserId, StatusCode> GetUserInfo(int userId)
         {
             var request = CreateRequestWithAuthorizationHeader($"/users/{userId}", Method.GET);
             var response = _restClient.Execute(request);
             if (response.StatusCode == ErrorCode())
             {
-                return Result<IEnumerable<Like>, StatusCode>.None(StatusCode.InternalServerError);
+                return Result<UserInfoByUserId, StatusCode>.None(StatusCode.InternalServerError);
             }
-
             var userInfo = JsonConvert
                 .DeserializeObject<UserInfoByUserId>(response.Content,
                     new IsoDateTimeConverter {DateTimeFormat = TimeFormat});
-            return Result<IEnumerable<Like>, StatusCode>.Some(userInfo?.likes, StatusCode.InternalServerError);
+            return userInfo == null
+                ? Result<UserInfoByUserId, StatusCode>.None(StatusCode.InternalServerError)
+                : Result<UserInfoByUserId, StatusCode>.Some(userInfo, StatusCode.Ok);
         }
 
         private static HttpStatusCode ErrorCode()
@@ -110,8 +127,6 @@ namespace VMindbookeBotSDK
             return HttpStatusCode.InternalServerError;
         }
         
-        
-
         private IRestRequest CreateRequestWithAuthorizationHeader(string resource, Method method)
         {
             var request = new RestRequest(resource, method);

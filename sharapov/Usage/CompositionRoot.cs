@@ -11,10 +11,10 @@ namespace Usage
 
         public static CompositionRoot Create(string configFileName = null)
         {
-            var configuration = new Configuration(configFileName ?? "appsettings.json");
+            var configurationFile = new Configuration(configFileName ?? "appsettings.json");
             return new CompositionRoot
             {
-                BotService = BotService.Create(configuration)
+                BotService = BotService.Create(configurationFile)
             };
         }
     }

@@ -17,13 +17,13 @@ namespace Usage
 
         public string GetTitle()
         {
-            var title = _generator.Sentence(new Random().Next() % 2 + 10);
+            var title = _generator.Sentence(new Random().Next() % 2 + 5);
             return title;
         }
 
         public string GetContent()
         {
-            var title = _generator.Sentence(new Random().Next() % 5 + 30);
+            var title = _generator.Sentence(new Random().Next() % 5 + 15);
             return title;
         }
 

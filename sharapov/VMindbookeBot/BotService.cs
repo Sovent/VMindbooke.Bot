@@ -1,38 +1,50 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Schema;
 using Hangfire;
 using Hangfire.MemoryStorage;
-using Microsoft.Extensions.Primitives;
-using Polly;
-using Polly.Retry;
 using Serilog;
-using Serilog.Core;
-using Serilog.Events;
-using VMindbookeBot;
+using Usage;
 using VMindbookeBotSDK;
 
-namespace Usage
+//TODO Using Optinal in this case probably not best idea
+//TODO big class how uncouple scenarios? extract each scenarios in separate class?
+
+namespace VMindbookeBot
 {
     public class BotService
     {
-        private readonly Configuration _config;
-        private readonly HttpRequester _httpRequester;
-        private readonly IWordsGenerator _wordsGenerator;
+        public Configuration Config { get; }
+        public HttpRequester HttpRequester { get; }
+        public IWordsGenerator WordsGenerator { get; }
+        private readonly Policies _policies;
+
+
+        //Hangfire needs parameterless constructor
+        public BotService()
+        {
+            _policies = new Policies(this);
+            Config = new Configuration("appsettings.json");
+            HttpRequester = HttpRequester.Create("TestBot 1");
+            WordsGenerator = Usage.WordsGenerator.Create(Config.Local);
+        }
 
         private BotService(Configuration config, HttpRequester httpRequester, IWordsGenerator wordsGenerator)
         {
-            _config = config;
-            _httpRequester = httpRequester;
-            _wordsGenerator = wordsGenerator;
+            _policies = new Policies(this);
+            Config = config;
+            HttpRequester = httpRequester;
+            WordsGenerator = wordsGenerator;
+        }
+
+        public Policies Policies
+        {
+            get { return _policies; }
         }
 
         public static BotService Create(Configuration config)
         {
             CreateLogger(config);
-            return new BotService(config, HttpRequester.Create("TestBot 1"), WordsGenerator.Create(config.Local));
+            return new BotService(config, HttpRequester.Create("TestBot 1"), Usage.WordsGenerator.Create(config.Local));
         }
 
         private static void CreateLogger(Configuration config)
@@ -41,19 +53,21 @@ namespace Usage
                 .MinimumLevel.Verbose()
                 .WriteTo.File(config.LogName)
                 .WriteTo.Console();
+            //.Filter.ByExcluding(Matching.FromSource("Hangfire"));
             Log.Logger = configuration.CreateLogger();
         }
 
         public void WriteComment(int postId)
         {
-            var threshold = _config.WriteCommentThreshold;
+            Log.Information($"WriteComment postId={postId}");
+            var threshold = Config.WriteCommentThreshold;
             var likesFromPost = GetPostLikes(postId);
             var likesCount = likesFromPost.Map(x => x.Length);
             likesCount.Do(likes =>
                 {
                     if (likes >= threshold)
                     {
-                        PostComment(postId, _wordsGenerator.GetContent());
+                        PostComment(postId, WordsGenerator.GetContent());
                     }
                 }
             );
@@ -61,7 +75,8 @@ namespace Usage
 
         public void WriteReply(int postId)
         {
-            var threshold = _config.ReplyCommentThreshold;
+            Log.Information($"WriteReply postId={postId}");
+            var threshold = Config.ReplyCommentThreshold;
             var postComments = GetPostComments(postId);
             postComments.Do(comments =>
                 {
@@ -69,16 +84,17 @@ namespace Usage
                     {
                         if (comment.likes.Length >= threshold)
                         {
-                            PostReply(postId, comment.id, _wordsGenerator.GetContent());
+                            PostReply(postId, comment.id, WordsGenerator.GetContent());
                         }
                     }
                 }
-            );   
+            );
         }
 
         public void CopyPost(int postId)
         {
-            var threshold = _config.CopyCommentThreshold;
+            Log.Information($"CopyPost postId={postId}");
+            var threshold = Config.CopyCommentThreshold;
             var post = GetPost(postId);
             var likesFromPost = post.OptionalResult.Map(p => p.likes);
             var likesCount = likesFromPost.Map(x => x.Length);
@@ -88,55 +104,54 @@ namespace Usage
                 {
                     if (likes >= threshold)
                     {
-                        CreatePostFromContent(_httpRequester.UserId, _wordsGenerator.GetTitle(), p.content);
+                        CreatePostFromContent(HttpRequester.UserId, WordsGenerator.GetTitle(), p.content);
                     }
                 });
             });
         }
 
-        private void CreatePostFromContent(int userId, string title, string content)
+        public void CopyMostLikedPost(int userId, TimeSpan timeSpan)
         {
-            var postReplyPolicy = GetCreateNewPostPolicy(userId);
-            var result = postReplyPolicy.Execute(() => _httpRequester.WriteNewPost(userId, title, content));
-            var postId = result.OptionalResult;
-            postId.Do(id => Log.Information($"New Post Created {nameof(postId)}={postId}"));
-            Log.Verbose($"{nameof(title)}={title} {nameof(content)}={content}");
+            var pastTime = DateTime.Now - timeSpan;
+            Log.Information($"CopyMostLikedPost userId={userId}, from {pastTime} to {DateTime.Now}");
+            var threshold = Config.MostLikedCommentThreshold;
+            var user = GetUser(userId);
+            var userLikes = user.OptionalResult.Map(p => p.likes);
+            var likesForPastTimeToNow = userLikes.Map(
+                likes => { return likes.Count(like => like.placingDateUtc > pastTime); });
+            likesForPastTimeToNow.Do(likes =>
+            {
+                if (likes >= threshold)
+                {
+                    var userPosts = GetUsersPost(userId);
+                    var mostLikedUserPost = userPosts.OptionalResult
+                        .Map(posts => posts.OrderByDescending(post => post.likes.Length).First());
+                    mostLikedUserPost.Do(post =>
+                        CreatePostFromContent(HttpRequester.UserId, post.title, post.content));
+                }
+            });
         }
 
-        private void PostReply(int postId, string commentId, string content)
+        public void Boost(int userId, Action endingEvent)
         {
-            var postReplyPolicy = GetPostReplyPolicy(postId, commentId);
-            postReplyPolicy.Execute(() => _httpRequester.WriteReply(postId, commentId, content));
-            Log.Information($"Reply to {nameof(postId)}={postId} {nameof(commentId)}={commentId} left");
-            Log.Verbose($"{nameof(content)}={content} ");
-        }
-        
-        private void PostComment(int postId, string content)
-        {
-            var writeCommentPolicy = GetWriteCommentPolicy(postId);
-            writeCommentPolicy.Execute(() => _httpRequester.WriteComment(postId, _wordsGenerator.GetContent()));
-            Log.Information($"Comment to {nameof(postId)}={postId} posted");
-            Log.Verbose($"{nameof(content)}={content}");
-        }
-        
-        private RetryPolicy<Result<int, HttpRequester.StatusCode>> GetCreateNewPostPolicy(int userId)
-        {
-            return Policy<Result<int, HttpRequester.StatusCode>>
-                .HandleResult(r => !r.HasValue)
-                .WaitAndRetry(_config.Retry, PolynomiallyTimeSpan,
-                    (r, span) =>
-                        Log.Warning(
-                            $"Retry Create New Post {nameof(userId)}={userId} : Time span {span}"));
-        }
-        
-        private RetryPolicy<HttpRequester.StatusCode> GetWriteCommentPolicy(int postId)
-        {
-            return Policy<HttpRequester.StatusCode>
-                .HandleResult(p => p.IsPostError())
-                .WaitAndRetry(_config.Retry, PolynomiallyTimeSpan,
-                    (r, span) =>
-                        Log.Warning(
-                            $"Retry Write Comment {nameof(postId)}={postId} : Time span {span}"));
+            try
+            {
+                GlobalConfiguration.Configuration.UseMemoryStorage();
+                Log.Information($"Start Boost userId={userId}");
+                var threshold = Config.StopBoostThreshold;
+                // RecurringJob.AddOrUpdate<BotService>(client => StartDailyBoost(userId, threshold), Cron.Daily);
+                BackgroundJob.Enqueue<BoostJob>(client => new BoostJob().StartDailyBoost(userId, threshold, this));
+            }
+            catch (Exception exception)
+            {
+                Log.Error(exception, "Wow, something go wrong");
+            }
+
+            using (var backgroundServer = new BackgroundJobServer())
+            {
+                Log.Information("Background service started");
+                endingEvent();
+            }
         }
 
         private Optional<Like[]> GetPostLikes(int postId)
@@ -144,50 +159,63 @@ namespace Usage
             var post = GetPost(postId);
             return post.OptionalResult.Map(p => p.likes);
         }
-        
+
         private Optional<Comment[]> GetPostComments(int postId)
         {
             var post = GetPost(postId);
-            return post.OptionalResult.Map(p=> p.comments);
+            return post.OptionalResult.Map(p => p.comments);
         }
 
         private Result<Post, HttpRequester.StatusCode> GetPost(int postId)
         {
-            var getPostPolicy = GetPostPolicy(postId);
-            var post = getPostPolicy.Execute(() => _httpRequester.GetPost(postId));
+            var getPostPolicy = Policies.GetPostPolicy(postId);
+            var post = getPostPolicy.Execute(() => HttpRequester.GetPost(postId));
             return post;
         }
 
-        private RetryPolicy<Result<Post, HttpRequester.StatusCode>> GetPostPolicy(int postId)
+        private Result<Post[], HttpRequester.StatusCode> GetUsersPost(int userId)
         {
-            var getPostPolicy = Policy<Result<Post, HttpRequester.StatusCode>>
-                .HandleResult(r => !r.HasValue)
-                .WaitAndRetry(_config.Retry, PolynomiallyTimeSpan,
-                    (r, span)
-                        => Log.Warning(
-                            $"Retry Get Post {nameof(postId)}={postId} : Time span {span}"
-                        ));
-            return getPostPolicy;
-        }
-        
-        
-        private RetryPolicy<HttpRequester.StatusCode> GetPostReplyPolicy(int postId, string commentId)
-        {
-            var getPostPolicy = Policy<HttpRequester.StatusCode>
-                .HandleResult(p => p.IsPostError())
-                .WaitAndRetry(_config.Retry, PolynomiallyTimeSpan,
-                    (r, span)
-                        => Log.Warning(
-                            $"Retry Post Reply {nameof(postId)}={postId} {nameof(commentId)}={commentId} : Time span {span}"
-                        ));
-            return getPostPolicy;
+            var getPostPolicy = Policies.GetUsersPostPolicy(userId);
+            var userPosts = getPostPolicy.Execute(() => HttpRequester.GetUserPosts(userId));
+            return userPosts;
         }
 
-
-        private static TimeSpan PolynomiallyTimeSpan(int retryAttempt)
+        internal Result<UserInfoByUserId, HttpRequester.StatusCode> GetUser(int userId)
         {
-            return TimeSpan.FromSeconds(1); 
-            // return TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)); //TODO Sometimes awaiting is too long  
+            var getPostPolicy = Policies.GetUserPolicy(userId);
+            var post = getPostPolicy.Execute(() => HttpRequester.GetUserInfo(userId));
+            return post;
         }
+
+        private void CreatePostFromContent(int userId, string title, string content)
+        {
+            var postReplyPolicy = Policies.GetCreateNewPostPolicy(userId);
+            var result = postReplyPolicy.Execute(() => HttpRequester.WriteNewPost(userId, title, content));
+            var postId = result.OptionalResult;
+            postId.Do(id =>
+            {
+                Log.Information($"New Post Created postId={id}");
+                Log.Verbose($"New Post Created postId={id} {nameof(title)}={title} {nameof(content)}={content}");
+            });
+        }
+
+        private void PostReply(int postId, string commentId, string content)
+        {
+            var postReplyPolicy = Policies.GetPostReplyPolicy(postId, commentId);
+            postReplyPolicy.Execute(() => HttpRequester.WriteReply(postId, commentId, content));
+            Log.Information($"Reply left {nameof(postId)}={postId} {nameof(commentId)}={commentId}");
+            Log.Verbose(
+                $"Reply left {nameof(postId)}={postId} {nameof(commentId)}={commentId} {nameof(content)}={content} ");
+        }
+
+        private void PostComment(int postId, string content)
+        {
+            var writeCommentPolicy = Policies.GetWriteCommentPolicy(postId);
+            writeCommentPolicy.Execute(() => HttpRequester.WriteComment(postId, WordsGenerator.GetContent()));
+            Log.Information($"Comment posted {nameof(postId)}={postId}");
+            Log.Verbose($"Comment posted {nameof(postId)}={postId} {nameof(content)}={content}");
+        }
+
+       
     }
 }
