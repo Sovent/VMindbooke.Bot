@@ -36,7 +36,8 @@ namespace VMindbooke.SDK
                 .Retry(RetryCount, (result, i) =>
                     Log.Information($"Retried request {i} times"));
             
-            Log.Information($"Requesting {request.Resource}");
+            Log.Information($"Requesting {request.Method} {request.Resource} "
+                            + $"{string.Join("&", request.Parameters)}");
             return retryPolicy.Execute(() => _restClient.Execute<TResult>(request)).Data;
         }
 
@@ -47,7 +48,8 @@ namespace VMindbooke.SDK
                 .Retry(RetryCount, (result, i) =>
                     Log.Information($"Retried request {i} times"));
             
-            Log.Information($"Requesting {request.Resource}");
+            Log.Information($"Requesting {request.Method} {request.Resource} "
+                            + $"{string.Join("&", request.Parameters)}");
             retryPolicy.Execute(() => _restClient.Execute(request));
         }
 

@@ -22,10 +22,10 @@ namespace VMindbooke.RainbowKarma
         }
 
         public IEnumerable<Post> GetPosts() =>
-            _vMindbooke.GetPosts();
+            _vMindbooke.GetPosts(take: 10);
 
         public IEnumerable<User> GetUsers() =>
-            _vMindbooke.GetUsers();
+            _vMindbooke.GetUsers(take: 10);
 
         public IEnumerable<Post> GetUserPosts(User user) =>
             _vMindbooke.GetUserPosts(user.Id);
