@@ -1,4 +1,4 @@
-namespace VMindbooke.SDK
+namespace VMindbookeBooster.Entities
 {
     public class PostContent
     {

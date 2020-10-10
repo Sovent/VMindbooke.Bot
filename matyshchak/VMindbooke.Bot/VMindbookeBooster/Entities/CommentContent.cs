@@ -1,4 +1,4 @@
-﻿namespace VMindbookeClient.Domain
+﻿namespace VMindbookeBooster.Entities
 {
     public class CommentContent
     {

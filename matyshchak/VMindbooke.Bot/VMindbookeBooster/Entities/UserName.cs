@@ -1,4 +1,4 @@
-﻿namespace VMindbookeClient
+﻿namespace VMindbookeBooster.Entities
 {
     public class UserName
     {

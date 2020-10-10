@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace VMindbookeClient.Domain
+namespace VMindbookeBooster.Entities
 {
     public class Comment
     {

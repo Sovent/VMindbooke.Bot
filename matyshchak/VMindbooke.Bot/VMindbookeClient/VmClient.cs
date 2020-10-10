@@ -5,8 +5,8 @@ using System.Net;
 using Newtonsoft.Json;
 using Polly;
 using RestSharp;
-using VMindbooke.SDK;
-using VMindbookeClient.Domain;
+using VMindbookeBooster;
+using VMindbookeBooster.Entities;
 
 namespace VMindbookeClient
 {
@@ -62,6 +62,24 @@ namespace VMindbookeClient
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
             
             var content = JsonConvert.DeserializeObject<User[]>(response.Content);
+            return content;
+        }
+        
+        public User GetUser(int userId)
+        {
+            var retryPolicy = Policy<IRestResponse>
+                .HandleResult(r => r.StatusCode == HttpStatusCode.InternalServerError)
+                .WaitAndRetry(new[]
+                {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(10),
+                    TimeSpan.FromSeconds(30)
+                }, (result, span) => Console.WriteLine());
+            
+            var request = new RestRequest($"users/{userId}", Method.GET);
+            var response = retryPolicy.Execute(() => _restClient.Execute(request));
+            
+            var content = JsonConvert.DeserializeObject<User>(response.Content);
             return content;
         }
         
