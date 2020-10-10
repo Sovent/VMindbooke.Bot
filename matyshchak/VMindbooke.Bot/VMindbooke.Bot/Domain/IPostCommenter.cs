@@ -1,6 +1,6 @@
-﻿using VMindbookeBooster.Entities;
+﻿using Usage.Domain.Entities;
 
-namespace VMindbookeBooster
+namespace Usage.Domain
 {
     public interface IPostCommenter
     {

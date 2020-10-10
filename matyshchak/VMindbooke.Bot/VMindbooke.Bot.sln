@@ -1,10 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindbookeClient", "VMindbookeClient\VMindbookeClient.csproj", "{C7A54AE2-693C-4A3C-93D4-CABB71411BCE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Usage", "Usage\Usage.csproj", "{64FB24FC-CEA3-44CA-9ADB-B6A274519F43}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindbookeBooster", "VMindbookeBooster\VMindbookeBooster.csproj", "{A5A586B7-13D4-41FA-B240-B938636DA22B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindbooke.Bot", "VMindbooke.Bot\VMindbooke.Bot.csproj", "{64FB24FC-CEA3-44CA-9ADB-B6A274519F43}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,17 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C7A54AE2-693C-4A3C-93D4-CABB71411BCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C7A54AE2-693C-4A3C-93D4-CABB71411BCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C7A54AE2-693C-4A3C-93D4-CABB71411BCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C7A54AE2-693C-4A3C-93D4-CABB71411BCE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{64FB24FC-CEA3-44CA-9ADB-B6A274519F43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{64FB24FC-CEA3-44CA-9ADB-B6A274519F43}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{64FB24FC-CEA3-44CA-9ADB-B6A274519F43}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{64FB24FC-CEA3-44CA-9ADB-B6A274519F43}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A5A586B7-13D4-41FA-B240-B938636DA22B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A5A586B7-13D4-41FA-B240-B938636DA22B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A5A586B7-13D4-41FA-B240-B938636DA22B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A5A586B7-13D4-41FA-B240-B938636DA22B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

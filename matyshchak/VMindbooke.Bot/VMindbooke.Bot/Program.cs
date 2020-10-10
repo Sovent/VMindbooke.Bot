@@ -6,9 +6,9 @@ using Hangfire.MemoryStorage;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
-using VMindbookeBooster;
-using VMindbookeBooster.Entities;
-using VMindbookeClient;
+using Usage.Domain;
+using Usage.Domain.Entities;
+using Usage.Infrastructure;
 
 namespace Usage
 {
@@ -22,6 +22,7 @@ namespace Usage
             var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
             var client = new VmClient(configuration["VMindbookeUrl"]);
             var user = client.Register(new UserName("STEPA"));
+            
             var builder = new ContainerBuilder();
             builder.Register(c => new VmClient(configuration["VMindbookeUrl"])).As<IVmClient>().SingleInstance();
             builder.RegisterType<LikeLimitChecker>().As<ILikeLimitChecker>().SingleInstance();

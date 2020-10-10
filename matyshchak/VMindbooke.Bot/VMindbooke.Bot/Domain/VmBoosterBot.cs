@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Hangfire;
-using VMindbookeBooster.Entities;
+using Usage.Domain.Entities;
 
-namespace VMindbookeBooster
+namespace Usage.Domain
 {
     public class VmBoosterBot
     {
@@ -28,7 +28,6 @@ namespace VMindbookeBooster
         private readonly int _likeLimit;
         private static Action _boosterJobs = () => { };
         private readonly HashSet<string> _jobIds = new HashSet<string>();
-        
         public bool IsBoosting { get; private set; }
         
         public VmBoosterBot CommentPosts(
@@ -93,7 +92,6 @@ namespace VMindbookeBooster
             _boosterJobs.Invoke();
             RecurringJob.AddOrUpdate(() => CheckLike(),
                 Cron.Minutely);
-            using var backgroundServer = new BackgroundJobServer();
         }
 
         public void CheckLike()

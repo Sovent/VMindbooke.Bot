@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace VMindbookeBooster.Entities
+namespace Usage.Domain.Entities
 {
     public class User
     {

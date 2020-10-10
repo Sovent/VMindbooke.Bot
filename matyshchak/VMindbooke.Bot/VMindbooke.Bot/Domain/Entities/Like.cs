@@ -1,6 +1,6 @@
 using System;
 
-namespace VMindbookeBooster.Entities
+namespace Usage.Domain.Entities
 {
     public class Like
     {

@@ -5,10 +5,10 @@ using System.Net;
 using Newtonsoft.Json;
 using Polly;
 using RestSharp;
-using VMindbookeBooster;
-using VMindbookeBooster.Entities;
+using Usage.Domain;
+using Usage.Domain.Entities;
 
-namespace VMindbookeClient
+namespace Usage.Infrastructure
 {
     public class VmClient : IVmClient
     {
