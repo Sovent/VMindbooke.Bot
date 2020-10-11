@@ -9,15 +9,17 @@ namespace Usage.Domain
     {
         private readonly UserCredentials _userCredentials;
         private readonly IVmClient _client;
+        private readonly ICommentContentProvider _commentContentProvider;
         private readonly HashSet<int> _commentedPostsIds = new HashSet<int>();
 
-        public PostCommenter(UserCredentials userCredentials, IVmClient client)
+        public PostCommenter(UserCredentials userCredentials, IVmClient client, ICommentContentProvider commentContentProvider)
         {
             _client = client;
+            _commentContentProvider = commentContentProvider;
             _userCredentials = userCredentials;
         }
 
-        public void CommentPosts(int likesThreshold, CommentContent comment)
+        public void CommentPosts(int likesThreshold)
         {
             Console.WriteLine("TYING TO COMMENT");
             var posts = _client.GetAllPosts();
@@ -36,7 +38,7 @@ namespace Usage.Domain
                 }
 
                 Console.WriteLine($"Added comment to post with id: {post.Id} title: {post.Title}");
-                _client.CommentPost(_userCredentials.Id, _userCredentials.Token, post.Id, comment);
+                _client.CommentPost(_userCredentials.Id, _userCredentials.Token, post.Id, _commentContentProvider.GetComment());
                 _commentedPostsIds.Add(post.Id);
             }
         }

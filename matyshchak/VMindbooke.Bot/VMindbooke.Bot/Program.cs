@@ -14,9 +14,6 @@ namespace Usage
 {
     class Program
     {
-        private static Action _boosterJobs = () => { };
-        private static HashSet<string> _boosterJobsIds = new HashSet<string>();
-
         static void Main(string[] args)
         {
             var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -29,6 +26,8 @@ namespace Usage
             builder.RegisterType<PostCommenter>().As<IPostCommenter>().SingleInstance();
             builder.RegisterType<CommentReplier>().As<ICommentReplier>().SingleInstance();
             builder.RegisterType<PostsStealer>().As<IPostsStealer>().SingleInstance();
+            builder.RegisterType<CommentContentProvider>().As<ICommentContentProvider>().SingleInstance();
+
             builder.Register(c => new UserCredentials(user.Id, user.Token)).As<UserCredentials>().SingleInstance();
             builder.RegisterType<VmBoosterBot>().WithParameter("likeLimit", configuration.GetValue<int>("DailyLikesLimit"));
             var container = builder.Build();
@@ -45,8 +44,9 @@ namespace Usage
             bbot.CommentPosts(configuration.GetValue<int>("MinDailyLikesToCommentPost"), new CommentContent("COMMENT"))
                 .ReplyComments(configuration.GetValue<int>("MinDailyLikesToReplyComment"), new CommentContent("REPLY"))
                 .StartBoosting();
+            
 
-
+            using var backgroundJobServer = new BackgroundJobServer();
             logger.Information("Background service started");
             Console.ReadKey();
         }

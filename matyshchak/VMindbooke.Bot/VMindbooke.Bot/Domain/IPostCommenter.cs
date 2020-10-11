@@ -4,6 +4,6 @@ namespace Usage.Domain
 {
     public interface IPostCommenter
     {
-        void CommentPosts(int likesThreshold, CommentContent comment);
+        void CommentPosts(int likesThreshold);
     }
 }

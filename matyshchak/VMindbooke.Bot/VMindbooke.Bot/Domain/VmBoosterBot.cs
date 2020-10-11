@@ -36,8 +36,12 @@ namespace Usage.Domain
         {
             var jobId = Guid.NewGuid().ToString();
             _jobIds.Add(jobId);
-            _boosterJobs += () => RecurringJob.AddOrUpdate(jobId,
-                () => _postCommenter.CommentPosts(minNumberOfDailyLikesToCommentPost, comment), Cron.Minutely);
+            
+            RecurringJob.AddOrUpdate<IPostCommenter>(jobId,
+                (p) => p.CommentPosts(minNumberOfDailyLikesToCommentPost), Cron.Minutely);
+
+            RecurringJob.AddOrUpdate(jobId,
+                () => _postCommenter.CommentPosts(minNumberOfDailyLikesToCommentPost), Cron.Minutely);
             return this;
         }
 
@@ -89,7 +93,7 @@ namespace Usage.Domain
         public void StartBoosting()
         {
             Console.WriteLine("STARTED BOOST");
-            _boosterJobs.Invoke();
+            //_boosterJobs();
             RecurringJob.AddOrUpdate(() => CheckLike(),
                 Cron.Minutely);
         }
