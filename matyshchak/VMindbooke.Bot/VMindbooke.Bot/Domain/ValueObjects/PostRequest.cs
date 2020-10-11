@@ -1,8 +1,8 @@
-namespace Usage.Domain.Entities
+namespace Usage.Domain.ContentProviders
 {
-    public class PostContent
+    public class PostRequest
     {
-        public PostContent(string title, string content)
+        public PostRequest(string title, string content)
         {
             Title = title;
             Content = content;

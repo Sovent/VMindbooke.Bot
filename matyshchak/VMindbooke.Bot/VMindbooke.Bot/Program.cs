@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Autofac;
 using Hangfire;
 using Hangfire.MemoryStorage;
@@ -7,8 +6,12 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 using Usage.Domain;
+using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
+using Usage.Domain.Jobs;
+using Usage.Domain.ValueObjects;
 using Usage.Infrastructure;
+using PostCommentingJob = Usage.Domain.Jobs.PostCommentingJob;
 
 namespace Usage
 {
@@ -18,18 +21,16 @@ namespace Usage
         {
             var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
             var client = new VmClient(configuration["VMindbookeUrl"]);
+            
             var user = client.Register(new UserName("STEPA"));
             
             var builder = new ContainerBuilder();
-            builder.Register(c => new VmClient(configuration["VMindbookeUrl"])).As<IVmClient>().SingleInstance();
-            builder.RegisterType<LikeLimitChecker>().As<ILikeLimitChecker>().SingleInstance();
-            builder.RegisterType<PostCommenter>().As<IPostCommenter>().SingleInstance();
-            builder.RegisterType<CommentReplier>().As<ICommentReplier>().SingleInstance();
-            builder.RegisterType<PostsStealer>().As<IPostsStealer>().SingleInstance();
+            builder.RegisterInstance(client).As<IVmClient>().SingleInstance();
             builder.RegisterType<CommentContentProvider>().As<ICommentContentProvider>().SingleInstance();
-
+            builder.RegisterType<PostTitleProvider>().As<IPostTitleProvider>().SingleInstance();
             builder.Register(c => new UserCredentials(user.Id, user.Token)).As<UserCredentials>().SingleInstance();
-            builder.RegisterType<VmBoosterBot>().WithParameter("likeLimit", configuration.GetValue<int>("DailyLikesLimit"));
+            RegisterThresholds(builder, configuration);
+            CreateBoostingJobs(builder);
             var container = builder.Build();
             
             GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(container));
@@ -40,30 +41,44 @@ namespace Usage
                 .WriteTo.Console()
                 .CreateLogger();
 
-            var bbot = container.Resolve<VmBoosterBot>();
-            bbot.CommentPosts(configuration.GetValue<int>("MinDailyLikesToCommentPost"), new CommentContent("COMMENT"))
-                .ReplyComments(configuration.GetValue<int>("MinDailyLikesToReplyComment"), new CommentContent("REPLY"))
-                .StartBoosting();
-            
+            var jobsContainer = container.Resolve<BoostingJobsContainer>();
+            jobsContainer.StartJobs();
 
             using var backgroundJobServer = new BackgroundJobServer();
             logger.Information("Background service started");
+            
             Console.ReadKey();
         }
 
-        public class ContainerJobActivator : JobActivator
+        private static void CreateBoostingJobs(ContainerBuilder container)
         {
-            private IContainer _container;
-
-            public ContainerJobActivator(IContainer container)
+            var jobsContainer = new BoostingJobsContainer();
+            void CreateJob<T>() where T : IBoostingJob
             {
-                _container = container;
+                jobsContainer.Add<T>();
+                container.RegisterType<T>().SingleInstance();
             }
+            
+            CreateJob<PostCommentingJob>();
+            CreateJob<CommentReplyingJob>();
+            CreateJob<PostStealingJob>();
+            CreateJob<LikeLimitCheckingJob>();
 
-            public override object ActivateJob(Type type)
-            {
-                return _container.Resolve(type);
-            }
+            container.RegisterInstance(jobsContainer).SingleInstance();
+        }
+
+        private static void RegisterThresholds(ContainerBuilder builder, IConfigurationRoot configuration)
+        {
+            builder.RegisterInstance(
+                new PostLikesToCommentThreshold(configuration.GetValue<int>("MinDailyPostLikesToComment")));
+            builder.RegisterInstance(
+                new CommentLikesToReplyThreshold(configuration.GetValue<int>("MinDailyLikesToReplyComment")));
+            builder.RegisterInstance(
+                new PostLikesToStealThreshold(configuration.GetValue<int>("MinDailyPostLikesToSteal")));
+            builder.RegisterInstance(
+                new UserLikesToStealPostThreshold(configuration.GetValue<int>("MinDailyUserLikesToStealHisBestPost")));
+            builder.RegisterInstance(
+                new UserLikesToStealPostThreshold(configuration.GetValue<int>("DailyBoostedUserLikesLimit")));
         }
     }
 }

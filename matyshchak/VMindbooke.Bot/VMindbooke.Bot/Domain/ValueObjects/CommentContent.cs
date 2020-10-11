@@ -1,4 +1,4 @@
-﻿namespace Usage.Domain.Entities
+﻿namespace Usage.Domain.ContentProviders
 {
     public class CommentContent
     {

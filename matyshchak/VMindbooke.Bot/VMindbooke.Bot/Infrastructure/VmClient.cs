@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Polly;
 using RestSharp;
 using Usage.Domain;
+using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
 
 namespace Usage.Infrastructure
@@ -142,7 +143,7 @@ namespace Usage.Infrastructure
             return content;
         }
 
-        public int Post(int userId, string userToken, PostContent postContent)
+        public int Post(int userId, string userToken, PostRequest postRequest)
         {
             var retryPolicy = Policy<IRestResponse>
                 .HandleResult(r => r.StatusCode == HttpStatusCode.InternalServerError)
@@ -156,7 +157,7 @@ namespace Usage.Infrastructure
 
             var request = new RestRequest($"users/{userId}/posts", Method.POST);
             request.AddHeader("Authorization", userToken);
-            request.AddJsonBody(postContent);
+            request.AddJsonBody(postRequest);
 
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
             var content = JsonConvert.DeserializeObject<int>(response.Content);
