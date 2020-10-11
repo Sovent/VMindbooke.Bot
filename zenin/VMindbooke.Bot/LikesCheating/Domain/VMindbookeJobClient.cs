@@ -1,7 +1,7 @@
 using System;
-using Serilog;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using LikesCheating.Infrastructure;
 
 namespace LikesCheating.Domain
 {
@@ -9,11 +9,7 @@ namespace LikesCheating.Domain
     {
         public VMindbookeJobClient()
         {
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.File("job_client.log")
-                .WriteTo.Console()
-                .CreateLogger();
-
+            _logger = new Logger("job-client.log");
             _cheatEngine = new Cheating();
         }
 
@@ -29,28 +25,28 @@ namespace LikesCheating.Domain
 
             using (var backgroundServer = new BackgroundJobServer())
             {
-                Log.Information("Background server started");
+                _logger.Information("Background server started");
                 while (true);
             }
         }
 
         public void StopCheatingJobs()
         {
-            Log.Information("Background server stopping...");
+            _logger.Information("Background server stopping...");
             RecurringJob.RemoveIfExists(_generalJobId);
         }
         
         public void StartDailyJobs(int userId, string token)
         {
-            Log.Information("Daily jobs started");
+            _logger.Information("Daily jobs started");
             RecurringJob.RemoveIfExists(_dailyJobsId);
             RecurringJob.AddOrUpdate(
                 _dailyJobsId,
-                () => CheckJobsRunningCondition(userId, token),
+                () => RunCheatingJobs(userId, token),
                 Cron.Minutely);
         }
         
-        public void CheckJobsRunningCondition(int userId, string token)
+        public void RunCheatingJobs(int userId, string token)
         {
             if (!_cheatEngine.CheckUserReachedLikesThreshold(userId))
             {
@@ -59,32 +55,37 @@ namespace LikesCheating.Domain
             else
             {
                 RecurringJob.RemoveIfExists(_dailyJobsId);
-                Log.Information($"Target likes count on user {userId} reached. Stopping daily jobs...");
+                _logger.Information($"Target likes count on user {userId} reached. Stopping daily jobs...");
             }
         }
 
         public void DoCheatingJobs(int userId, string token)
         {
-            try
-            { _cheatEngine.CommentIfLikesMoreThanThreshold(token); }
-            catch (Exception e)
-            { Log.Error($"Method 'CommentIfLikesMoreThanThreshold' down: {e}"); }
-            try
-            { _cheatEngine.ReplyIfLikesMoreThanThreshold(token); }
-            catch (Exception e)
-            { Log.Error($"Method 'ReplyIfLikesMoreThanThreshold' down: {e}"); }
-            try
-            { _cheatEngine.DuplicatePostIfLikesMoreThanThreshold(userId, token); }
-            catch (Exception e)
-            { Log.Error($"Method 'DuplicatePostIfLikesMoreThanThreshold' down: {e}"); }
-            try
-            { _cheatEngine.DuplicateMostSuccessfulPostIfLikesMoreThanThreshold(userId, token); }
-            catch (Exception e)
-            { Log.Error($"Method 'DuplicateMostSuccessfulPostIfLikesMoreThanThreshold' down: {e}"); }
+            DoJob(_cheatEngine.CommentIfLikesMoreThanThreshold, token); 
+            DoJob(_cheatEngine.ReplyIfLikesMoreThanThreshold, token);
+            DoJob(_cheatEngine.DuplicatePostIfLikesMoreThanThreshold, userId, token);
+            DoJob(_cheatEngine.DuplicateMostSuccessfulPostIfLikesMoreThanThreshold, userId, token);
         }
 
+        public void DoJob(Action<int, string> action, int userId, string token)
+        {
+            try
+            { action(userId, token); }
+            catch (Exception e)
+            { _logger.Error($"Method {action.Method.Name} down: {e}"); }
+        }
+        
+        public void DoJob(Action<string> action, string token)
+        {
+            try
+            { action(token); }
+            catch (Exception e)
+            { _logger.Error($"Method {action.Method.Name} down: {e}"); }
+        }
+
+        private readonly ILogger _logger;
+        private readonly ICheating _cheatEngine;
         private readonly string _dailyJobsId = "daily-jobs-id";
         private readonly string _generalJobId = "general-job-id";
-        private readonly Cheating _cheatEngine;
     }
 }

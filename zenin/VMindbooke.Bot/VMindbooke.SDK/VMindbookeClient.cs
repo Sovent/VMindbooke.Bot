@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
 using RestSharp;
 using Newtonsoft.Json;
 using Polly;
@@ -17,88 +20,113 @@ namespace VMindbooke.SDK
                 .CreateLogger();
             
             _restClient = new RestClient(vmindbookeBaseUrl);
-            retryMaxCount = 3;
         }
         public IReadOnlyCollection<User> GetUsers()
         {
             var resource = "users";
-            return GET<IReadOnlyCollection<User>>(resource);
+            return Get<IReadOnlyCollection<User>>(resource);
         }
         public User GetUser(int userId)
         {
             var resource = $"users/{userId}";
-            return GET<User>(resource);
+            return Get<User>(resource);
         }
         public Post GetPost(int postId)
         {
             var resource = $"posts/{postId}";
-            return GET<Post>(resource);
+            return Get<Post>(resource);
         }
         public IReadOnlyCollection<Post> GetPosts()
         {
             var resource = $"posts";
-            return GET<IReadOnlyCollection<Post>>(resource);
+            return Get<IReadOnlyCollection<Post>>(resource);
         }
 
         public IReadOnlyCollection<Post> GetUserPosts(int userId)
         {
             var resource = $"users/{userId}/posts";
-            return GET<IReadOnlyCollection<Post>>(resource);
+            return Get<IReadOnlyCollection<Post>>(resource);
         }
         
         public void Comment(CommentContent commentContent, int postId, string token)
         {
             var resource = $"posts/{postId}/comments";
-            POST<string>(resource, commentContent, token);
+            Post<string>(resource, commentContent, token);
         }
         public void Reply(ReplyContent replyContent, int postId, Guid commentId, string token)
         {
             var resource = $"posts/{postId}/comments/{commentId}/replies";
-            POST<int>(resource, replyContent, token);
+            Post<int>(resource, replyContent, token);
         }
         public int Post(PostContent postContent, int userId, string token)
         {
             var resource = $"users/{userId}/posts";
-            return POST<int>(resource, postContent, token);
+            return Post<int>(resource, postContent, token);
         }
 
-        private T GET<T>(string resource)
+        private T Get<T>(string resource)
         {
             var request = new RestRequest(resource, Method.GET);
             
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(r => !r.IsSuccessful)
-                .Retry(retryMaxCount, 
-                    (result, i) => Log.Information($"{i} retry of GET to /{resource}"));
-            var response = retryPolicy.Execute(() => _restClient.Execute(request));
-
-            var content = default(T);
-            try
-            { content = JsonConvert.DeserializeObject<T>(response.Content); }
-            catch
-            { Log.Error($"Retry count ({retryMaxCount}) of GET to /{resource} exceeded");}
-            return content;
+            var response = ResponseWithRetry(request, resource);
+            return Deserialization<T>(response, resource);
         }
-        private T POST<T>(string resource, IContent bodyContent, string token)
+        
+        private T Post<T>(string resource, IContent bodyContent, string token)
         {
             var request = new RestRequest(resource, Method.POST);
             request.AddJsonBody(bodyContent);
             request.AddHeader("Authorization", token);
-            
-            var retryPolicy = Policy<IRestResponse>
-                .HandleResult(r => !r.IsSuccessful)
-                .Retry(retryMaxCount, 
-                    (result, i) => Log.Information($"{i} retry of POST to /{resource}"));
-            var response = retryPolicy.Execute(() => _restClient.Execute<int>(request));
-            var content = default(T);
-            try
-            { content = JsonConvert.DeserializeObject<T>(response.Content); }
-            catch
-            { Log.Error($"Retry count ({retryMaxCount}) of POST to /{resource} exceeded"); }
-            return content;
+
+            var response = ResponseWithRetry(request, resource);
+            if(response.IsSuccessful)
+                return Deserialization<T>(response, resource);
+            else
+            {
+                Log.Error($"Retry count ({_retryMaxCount}) to /{resource} exceeded");
+                return default(T);
+            }
         }
         
+        public void Retry(DelegateResult<IRestResponse> result, int retryNumber, Polly.Context context,
+            RestSharp.Method method, string resource)
+        {
+            Log.Information($"{retryNumber} retry of {method} to /{resource}. " +
+                            $"Exception: {result.Result.StatusCode}");
+        }
+        
+        public IRestResponse ResponseWithRetry(RestRequest request, string resource)
+        {
+            var retryPolicy = Policy<IRestResponse>
+                .HandleResult(r => httpStatusCodesToRetry.Contains(r.StatusCode))
+                .Retry(_retryMaxCount,
+                    (exception, i, context) 
+                        => Retry(exception, i, context, request.Method, resource));
+            return retryPolicy.Execute(() => _restClient.Execute<int>(request));
+        }
+        
+        public T Deserialization<T>(IRestResponse response, string resource)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<T>(response.Content);
+            }
+            catch
+            {
+                Log.Error($"Response deserialization error from /{resource}");
+                return default(T);
+            }
+        }
+        
+        HttpStatusCode[] httpStatusCodesToRetry = {
+            HttpStatusCode.RequestTimeout, // 408
+            HttpStatusCode.InternalServerError, // 500
+            HttpStatusCode.BadGateway, // 502
+            HttpStatusCode.ServiceUnavailable, // 503
+            HttpStatusCode.GatewayTimeout // 504
+        }; 
+
         private readonly RestClient _restClient;
-        private readonly int retryMaxCount;
+        private readonly int _retryMaxCount = 1;
     }
 }

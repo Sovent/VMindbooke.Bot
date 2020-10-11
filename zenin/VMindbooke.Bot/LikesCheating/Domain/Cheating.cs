@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Configuration;
+using LikesCheating.Infrastructure;
 using VMindbooke.SDK;
-using Serilog;
 
 namespace LikesCheating.Domain
 {
@@ -11,20 +10,21 @@ namespace LikesCheating.Domain
     {
         public Cheating()
         {
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.File("actions.log")
-                .WriteTo.Console()
-                .CreateLogger();
+            _logger = new Logger("actions.log");
+            var configuration = new Configuration();
+            _client = new VMindbookeClient(configuration.GetValue("VMindbookeUrl"));
             
-            var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-            _client = new VMindbookeClient(configuration["VMindbookeUrl"]);
             _thresholds = new Thresholds(
-                Convert.ToInt32(configuration["PostThresholdToComment"]),
-                Convert.ToInt32(configuration["PostThresholdToDuplicate"]),
-                Convert.ToInt32(configuration["CommentThresholdToReply"]),
-                Convert.ToInt32(configuration["UserSuccessPostThreshold"]),
-            Convert.ToInt32(configuration["UserTargetThreshold"])
+                Convert.ToInt32(configuration.GetValue("PostThresholdToComment")),
+                Convert.ToInt32(configuration.GetValue("PostThresholdToDuplicate")),
+                Convert.ToInt32(configuration.GetValue("CommentThresholdToReply")),
+                Convert.ToInt32(configuration.GetValue("UserSuccessPostThreshold")),
+            Convert.ToInt32(configuration.GetValue("UserTargetThreshold"))
             );
+            
+            _commentedPosts = ActionsRepository.Load<List<int>>(_commentedPostsPath);
+            _duplicatedPosts = ActionsRepository.Load<List<int>>(_duplicatedPostsPath);;
+            _repliedComments = ActionsRepository.Load<List<Guid>>(_repliedCommentsPath);;
         }
         public void CommentIfLikesMoreThanThreshold(string token)
         {
@@ -38,7 +38,8 @@ namespace LikesCheating.Domain
                     var commentContent = new CommentContent("Hello there! I'm using likes cheating");
                     _client.Comment(commentContent, post.Id, token);
                     _commentedPosts.Add(post.Id);
-                    Log.Information($"Comment to post {post.Id} added");
+                    ActionsRepository.Save(_commentedPostsPath, _commentedPosts);
+                    _logger.Information($"Comment to post {post.Id} added");
                 }
             }
         }
@@ -46,19 +47,19 @@ namespace LikesCheating.Domain
         public void ReplyIfLikesMoreThanThreshold(string token)
         {
             var posts = _client.GetPosts();
-            foreach (var post in posts)
+            var postComments = posts.SelectMany(p => p.Comments,
+                (p, c) => new {Post = p, Comment = c});
+            foreach (var postComment in postComments)
             {
-                foreach (var comment in post.Comments)
+                if (postComment.Comment.Likes.Where(like => like.PlacingDateUtc < DateTime.Today).Count() >
+                    _thresholds.CommentThresholdToReply
+                    && !_repliedComments.Contains(postComment.Comment.Id))
                 {
-                    if (comment.Likes.Where(like => like.PlacingDateUtc < DateTime.Today).Count() >
-                        _thresholds.CommentThresholdToReply
-                        && !_repliedComments.Contains(comment.Id))
-                    {
-                        var replyContent = new ReplyContent("Hello there! I'm using likes cheating");
-                        _client.Reply(replyContent, post.Id, comment.Id, token);
-                        _repliedComments.Add(comment.Id);
-                        Log.Information($"Reply to comment {comment.Id} added");
-                    }
+                    var replyContent = new ReplyContent("Hello there! I'm using likes cheating");
+                    _client.Reply(replyContent, postComment.Post.Id, postComment.Comment.Id, token);
+                    _repliedComments.Add(postComment.Comment.Id);
+                    ActionsRepository.Save(_repliedCommentsPath, _repliedComments);
+                    _logger.Information($"Reply to comment {postComment.Comment.Id} added");
                 }
             }
         }
@@ -75,7 +76,8 @@ namespace LikesCheating.Domain
                     var postContent = new PostContent("Spizjeno", post.Content);
                     _client.Post(postContent, userId, token);
                     _duplicatedPosts.Add(post.Id);
-                    Log.Information($"Post {post.Id} duplicated");
+                    ActionsRepository.Save(_duplicatedPostsPath, _duplicatedPosts);
+                    _logger.Information($"Post {post.Id} duplicated");
                 }
             }
         }
@@ -83,20 +85,19 @@ namespace LikesCheating.Domain
         public void DuplicateMostSuccessfulPostIfLikesMoreThanThreshold(int userId, string token)
         {
             var users = _client.GetUsers();
-            foreach (var user in users)
+            var posts = users.SelectMany(u => _client.GetUserPosts(u.Id),
+                (u, p) => new {User = u, Post = p}).Select(up => up.Post);
+            foreach (var post in posts)
             {
-                var userPosts = _client.GetUserPosts(user.Id);
-                foreach (var post in userPosts)
+                if (post.Likes.Where(like => like.PlacingDateUtc < DateTime.Today).Count() >
+                    _thresholds.UserSuccessPostThreshold
+                    && !_duplicatedPosts.Contains(post.Id))
                 {
-                    if (post.Likes.Where(like => like.PlacingDateUtc < DateTime.Today).Count() > 
-                        _thresholds.UserSuccessPostThreshold
-                        && !_duplicatedPosts.Contains(post.Id))
-                    {
-                        var postContent = new PostContent(post.Title, post.Content);
-                        _client.Post(postContent, userId, token);
-                        _duplicatedPosts.Add(post.Id);
-                        Log.Information($"Post {post.Id} duplicated");
-                    }
+                    var postContent = new PostContent(post.Title, post.Content);
+                    _client.Post(postContent, userId, token);
+                    _duplicatedPosts.Add(post.Id);
+                    ActionsRepository.Save(_duplicatedPostsPath, _duplicatedPosts);
+                    _logger.Information($"Post {post.Id} duplicated");
                 }
             }
         }
@@ -104,16 +105,18 @@ namespace LikesCheating.Domain
         public bool CheckUserReachedLikesThreshold(int userId)
         {
             var user = _client.GetUser(userId);
-            Log.Information($"User {userId} has {user.Likes.Count} likes");
-            if (user.Likes.Count < _thresholds.UserDailyTargetThreshold)
-                return false;
-            return true;
+            _logger.Information($"User {userId} has {user.Likes.Count} likes");
+            return user.Likes.Count < _thresholds.UserDailyTargetThreshold;
         }
 
+        private readonly ILogger _logger;
+        private readonly IVMindbookeClient _client;
         private readonly Thresholds _thresholds;
-        private readonly VMindbookeClient _client;
-        private readonly List<int> _commentedPosts = new List<int>();
-        private readonly List<int> _duplicatedPosts = new List<int>();
-        private readonly List<Guid> _repliedComments = new List<Guid>();
+        private List<int> _commentedPosts;
+        private List<int> _duplicatedPosts;
+        private List<Guid> _repliedComments;
+        private const string _commentedPostsPath = "commentedPosts.json";
+        private const string _duplicatedPostsPath = "duplicatedPosts.json";
+        private const string _repliedCommentsPath = "repliedComments.json";
     }
 }

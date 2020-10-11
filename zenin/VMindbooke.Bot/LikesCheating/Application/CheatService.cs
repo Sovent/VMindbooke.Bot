@@ -5,7 +5,7 @@ namespace LikesCheating.Application
 {
     public class CheatService : ICheatService
     {
-        public CheatService(VMindbookeJobClient jobClient)
+        public CheatService(IVMindbookeJobClient jobClient)
         {
             _jobClient = jobClient;
         }
@@ -19,6 +19,6 @@ namespace LikesCheating.Application
             _jobClient.StopCheatingJobs();
         }
 
-        private  readonly VMindbookeJobClient _jobClient;
+        private  readonly IVMindbookeJobClient _jobClient;
     }
 }
