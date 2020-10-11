@@ -21,8 +21,8 @@ jobs:
 
         - name: Build
           run: dotnet build --configuration Release
-          working-directory: ./VMindbooke.Bot/gronin/Lesson4
+          working-directory: ./gronin/Lesson4
 
         - name: Run unit tests
           run: dotnet test --configuration Release
-          working-directory: ./VMindbooke.Bot/gronin/Lesson4
+          working-directory: ./gronin/Lesson4
