@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Serilog;
 using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
@@ -9,7 +10,10 @@ namespace Usage.Domain.Jobs
 {
     public class PostCommentingJob : IBoostingJob
     {
-        public PostCommentingJob(UserCredentials userCredentials, IVmClient client, ICommentContentProvider commentContentProvider, PostLikesToCommentThreshold likesThreshold)
+        public PostCommentingJob(UserCredentials userCredentials,
+            IVmClient client,
+            ICommentContentProvider commentContentProvider,
+            PostLikesToCommentThreshold likesThreshold)
         {
             _userCredentials = userCredentials;
             _client = client;
@@ -25,7 +29,7 @@ namespace Usage.Domain.Jobs
 
         public void Execute()
         {
-            Console.WriteLine("TYING TO COMMENT");
+            Log.Information("Executing PostCommentingJob");
             var posts = _client.GetAllPosts();
             foreach (var post in posts)
             {
@@ -35,13 +39,14 @@ namespace Usage.Domain.Jobs
                     
                 if (numberOfDailyLikes < _likesThreshold.Value)
                     continue;
+                
                 if (_commentedPostsIds.Contains(post.Id))
                 {
-                    Console.WriteLine($"post {post.Id} is already commented");
+                    Log.Information($"Post with Id: {post.Id} is already commented.");
                     continue;
                 }
 
-                Console.WriteLine($"Added comment to post with id: {post.Id} title: {post.Title}");
+                Log.Information($"Added comment to post with Id: {post.Id}.");
                 _client.CommentPost(_userCredentials.Id, _userCredentials.Token, post.Id, _commentContentProvider.GetCommentContent());
                 _commentedPostsIds.Add(post.Id);
             }

@@ -1,24 +1,14 @@
 ﻿using System;
-using System.Threading;
 using Hangfire;
+using Serilog;
 using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
 
 namespace Usage.Domain.Jobs
 {
     public class LikeLimitCheckingJob : IBoostingJob
-
     {
         private readonly BoostingJobsContainer _boostingJobsContainer;
-
-        public LikeLimitCheckingJob(IVmClient vmClient, UserCredentials userCredentials,
-            BoostingJobsContainer boostingJobsContainer)
-        {
-            _vmClient = vmClient;
-            _userCredentials = userCredentials;
-            _boostingJobsContainer = boostingJobsContainer;
-        }
-
         private readonly IVmClient _vmClient;
         private readonly UserCredentials _userCredentials;
         private readonly UserLikesThreshold _userLikesThreshold;
@@ -42,12 +32,14 @@ namespace Usage.Domain.Jobs
 
         public void Execute()
         {
+            Log.Information("Executing LikeLimitCheckingJob");
             if (IsLimitExceeded())
             {
+                Log.Information("Daily like limit is exceeded.");
                 _boostingJobsContainer.StopJobs();
-                Console.WriteLine("LIKE LIMIT EXCEEDED, STOPPING");
-                BackgroundJob.Schedule(() => _boostingJobsContainer.StartJobs(),
-                    DateTime.Today.AddDays(1) - DateTime.Now);
+                var delay = DateTime.Today.AddDays(1) - DateTime.Now;
+                Log.Information($"Scheduling next boosting jobs start with delay: {delay}");
+                BackgroundJob.Schedule(() => _boostingJobsContainer.StartJobs(), delay);
             }
         }
     }

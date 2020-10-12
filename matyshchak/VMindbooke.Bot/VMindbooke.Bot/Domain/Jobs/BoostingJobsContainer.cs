@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Hangfire;
+using Serilog;
 
 namespace Usage.Domain.Jobs
 {
@@ -18,11 +19,13 @@ namespace Usage.Domain.Jobs
 
         public void StartJobs()
         {
+            Log.Information("Starting boosting jobs");
             _boostingJobs();
         }
 
         public void StopJobs()
         {
+            Log.Information("Removing boosting jobs");
             foreach (var jobId in _jobIds)
             {
                 RecurringJob.RemoveIfExists(jobId);

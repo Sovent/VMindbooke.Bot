@@ -1,6 +1,4 @@
-﻿using Hangfire;
-
-namespace Usage.Domain.Jobs
+﻿namespace Usage.Domain.Jobs
 {
     public interface IBoostingJob
     {

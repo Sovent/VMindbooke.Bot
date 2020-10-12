@@ -19,35 +19,47 @@ namespace Usage
     {
         static void Main(string[] args)
         {
-            var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-            var client = new VmClient(configuration["VMindbookeUrl"]);
-            
-            var user = client.Register(new UserName("STEPA"));
-            
-            var builder = new ContainerBuilder();
-            builder.RegisterInstance(client).As<IVmClient>().SingleInstance();
-            builder.RegisterType<CommentContentProvider>().As<ICommentContentProvider>().SingleInstance();
-            builder.RegisterType<PostTitleProvider>().As<IPostTitleProvider>().SingleInstance();
-            builder.Register(c => new UserCredentials(user.Id, user.Token)).As<UserCredentials>().SingleInstance();
-            RegisterThresholds(builder, configuration);
-            CreateBoostingJobs(builder);
-            var container = builder.Build();
-            
-            GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(container));
-            GlobalConfiguration.Configuration.UseMemoryStorage();
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
 
-            var logger = new LoggerConfiguration()
+            Log.Logger = new LoggerConfiguration()
                 .WriteTo.File("regular.log", restrictedToMinimumLevel: LogEventLevel.Information)
                 .WriteTo.Console()
                 .CreateLogger();
 
-            var jobsContainer = container.Resolve<BoostingJobsContainer>();
-            jobsContainer.StartJobs();
+            try
+            {
+                var client = new VmClient(configuration["VMindbookeUrl"]);
+                var userToBoost = client.Register(new UserName("Stepan M"));
 
-            using var backgroundJobServer = new BackgroundJobServer();
-            logger.Information("Background service started");
-            
-            Console.ReadKey();
+                var builder = new ContainerBuilder();
+                builder.RegisterInstance(client).As<IVmClient>().SingleInstance();
+                builder.RegisterType<CommentContentProvider>().As<ICommentContentProvider>().SingleInstance();
+                builder.RegisterType<PostTitleProvider>().As<IPostTitleProvider>().SingleInstance();
+                builder.Register(c => new UserCredentials(userToBoost.Id, userToBoost.Token)).As<UserCredentials>()
+                    .SingleInstance();
+                RegisterThresholds(builder, configuration);
+                CreateBoostingJobs(builder);
+                var container = builder.Build();
+
+                var jobsContainer = container.Resolve<BoostingJobsContainer>();
+                jobsContainer.StartJobs();
+
+                GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(container));
+                GlobalConfiguration.Configuration.UseMemoryStorage();
+                using var backgroundJobServer = new BackgroundJobServer();
+                Log.Information("Background service started");
+                Console.ReadKey();
+            }
+            catch (Exception exception)
+            {
+                Log.Fatal(exception, "The application has failed");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
 
         private static void CreateBoostingJobs(ContainerBuilder container)

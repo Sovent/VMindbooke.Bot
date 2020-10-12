@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Serilog;
 using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
@@ -28,7 +29,7 @@ namespace Usage.Domain.Jobs
         
         public void Execute()
         {
-            var comments = _client.GetAllComments();
+            Log.Information("Executing CommentReplyingJob.");
             var posts = _client.GetAllPosts();
             foreach (var post in posts)
             {
@@ -39,13 +40,14 @@ namespace Usage.Domain.Jobs
 
                     if (numberOfDailyLikes < _likesToReplyThreshold.Value)
                         continue;
+                    
                     if (_repliedCommentsIds.Contains(comment.Id))
                     {
-                        Console.WriteLine($"comment {comment.Id} is already replied");
+                        Log.Information($"Comment with Id: {comment.Id} is already replied.");
                         continue;
                     }
 
-                    Console.WriteLine($"Added reply to post with id {comment.Id}");
+                    Log.Information($"Adding reply to comment with Id: {comment.Id}.");
                     _client.ReplyToComment(_userCredentials.Token,
                         post.Id,
                         comment.Id,
