@@ -16,9 +16,11 @@ namespace Usage.Infrastructure
     public class VmClient : IVmClient
     {
         private readonly RestClient _restClient;
+        private readonly ILogger _logger;
         
-        public VmClient(string vmindbookeBaseUrl)
+        public VmClient(string vmindbookeBaseUrl, ILogger logger)
         {
+            _logger = logger;
             _restClient = new RestClient(vmindbookeBaseUrl);
         }
 

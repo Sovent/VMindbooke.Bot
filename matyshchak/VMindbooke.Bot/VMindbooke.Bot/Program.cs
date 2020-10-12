@@ -5,15 +5,14 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using Serilog.Core;
 using Serilog.Events;
 using Usage.Domain;
 using Usage.Domain.ContentProviders;
-using Usage.Domain.Entities;
 using Usage.Domain.Jobs;
 using Usage.Domain.ValueObjects;
 using Usage.Domain.ValueObjects.LikeThresholds;
 using Usage.Infrastructure;
-using PostCommentingJob = Usage.Domain.Jobs.PostCommentingJob;
 
 namespace Usage
 {
@@ -32,19 +31,22 @@ namespace Usage
             
             try
             {
-                var client = new VmClient(configuration["VMindbookeUrl"]);
-                var userToBoost = client.Register(new UserName("Stepan M"));
-
                 var builder = new ContainerBuilder();
-                builder.RegisterInstance(client).As<IVmClient>().SingleInstance();
+                builder.RegisterType<Logger>().As<ILogger>();
+                builder.RegisterType<VmClient>().As<IVmClient>().SingleInstance();
                 builder.RegisterType<CommentContentProvider>().As<ICommentContentProvider>().SingleInstance();
                 builder.RegisterType<PostTitleProvider>().As<IPostTitleProvider>().SingleInstance();
-                builder.Register(c => new UserCredentials(userToBoost.Id, userToBoost.Token)).As<UserCredentials>()
-                    .SingleInstance();
                 RegisterThresholds(builder, configuration);
                 CreateBoostingJobs(builder);
                 var container = builder.Build();
                 
+                var client = container.Resolve<IVmClient>();
+                var userToBoost = client.Register(new UserName("Stepan M"));
+                builder.Register(c => new UserCredentials(userToBoost.Id, userToBoost.Token))
+                    .As<UserCredentials>()
+                    .SingleInstance();
+
+                container = builder.Build();
                 GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(container));
                 GlobalConfiguration.Configuration.UseMemoryStorage();
 
