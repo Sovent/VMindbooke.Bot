@@ -70,15 +70,15 @@ namespace Usage
         private static void RegisterThresholds(ContainerBuilder builder, IConfigurationRoot configuration)
         {
             builder.RegisterInstance(
-                new PostLikesToCommentThreshold(configuration.GetValue<int>("MinDailyPostLikesToComment")));
+                new PostLikesToCommentThreshold(configuration.GetValue<int>("PostLikesToComment")));
             builder.RegisterInstance(
-                new CommentLikesToReplyThreshold(configuration.GetValue<int>("MinDailyLikesToReplyComment")));
+                new CommentLikesToReplyThreshold(configuration.GetValue<int>("CommentLikesToReply")));
             builder.RegisterInstance(
-                new PostLikesToStealThreshold(configuration.GetValue<int>("MinDailyPostLikesToSteal")));
+                new PostLikesToStealThreshold(configuration.GetValue<int>("PostLikesToSteal")));
             builder.RegisterInstance(
-                new UserLikesToStealPostThreshold(configuration.GetValue<int>("MinDailyUserLikesToStealHisBestPost")));
+                new UserLikesToStealPostThreshold(configuration.GetValue<int>("UserLikesToStealHisBestPost")));
             builder.RegisterInstance(
-                new UserLikesToStealPostThreshold(configuration.GetValue<int>("DailyBoostedUserLikesLimit")));
+                new UserLikesThreshold(configuration.GetValue<int>("UserLikesLimit")));
         }
     }
 }

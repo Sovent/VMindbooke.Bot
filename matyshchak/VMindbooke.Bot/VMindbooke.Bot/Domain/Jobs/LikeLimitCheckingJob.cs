@@ -1,4 +1,7 @@
-﻿using Usage.Domain.Entities;
+﻿using System;
+using System.Threading;
+using Hangfire;
+using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
 
 namespace Usage.Domain.Jobs
@@ -40,7 +43,12 @@ namespace Usage.Domain.Jobs
         public void Execute()
         {
             if (IsLimitExceeded())
+            {
                 _boostingJobsContainer.StopJobs();
+                Console.WriteLine("LIKE LIMIT EXCEEDED, STOPPING");
+                BackgroundJob.Schedule(() => _boostingJobsContainer.StartJobs(),
+                    DateTime.Today.AddDays(1) - DateTime.Now);
+            }
         }
     }
 }
