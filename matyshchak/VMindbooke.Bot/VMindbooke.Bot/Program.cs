@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Autofac;
 using Hangfire;
 using Hangfire.MemoryStorage;
@@ -10,6 +11,7 @@ using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
 using Usage.Domain.Jobs;
 using Usage.Domain.ValueObjects;
+using Usage.Domain.ValueObjects.LikeThresholds;
 using Usage.Infrastructure;
 using PostCommentingJob = Usage.Domain.Jobs.PostCommentingJob;
 
@@ -48,9 +50,10 @@ namespace Usage
 
                 var jobsContainer = container.Resolve<BoostingJobsContainer>();
                 jobsContainer.StartJobs();
-                
                 using var backgroundJobServer = new BackgroundJobServer();
                 Log.Information("Background service started");
+                Thread.Sleep(TimeSpan.FromMinutes(1));
+                //jobsContainer.StopJobs();
                 Console.ReadKey();
             }
             catch (Exception exception)
@@ -75,7 +78,7 @@ namespace Usage
             CreateJob<PostCommentingJob>();
             CreateJob<CommentReplyingJob>();
             CreateJob<PostStealingJob>();
-            CreateJob<LikeLimitCheckingJob>();
+            //CreateJob<LikeLimitCheckingJob>();
 
             container.RegisterInstance(jobsContainer).SingleInstance();
         }

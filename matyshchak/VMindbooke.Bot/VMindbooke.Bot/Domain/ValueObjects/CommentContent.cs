@@ -1,4 +1,4 @@
-﻿namespace Usage.Domain.ContentProviders
+﻿namespace Usage.Domain.ValueObjects
 {
     public class CommentContent
     {

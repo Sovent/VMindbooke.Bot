@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
+using Usage.Domain.ValueObjects;
+using Usage.Infrastructure;
 
 namespace Usage.Domain
 {

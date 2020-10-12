@@ -1,4 +1,4 @@
-﻿namespace Usage.Domain.ValueObjects
+﻿namespace Usage.Domain.ValueObjects.LikeThresholds
 {
     public class UserLikesToStealPostThreshold
     {

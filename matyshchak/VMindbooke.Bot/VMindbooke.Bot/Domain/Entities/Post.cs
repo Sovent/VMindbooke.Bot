@@ -7,19 +7,12 @@ namespace Usage.Domain.Entities
     public class Post
     {
         public int Id { get; set; }
-        
         public int AuthorId { get; set; }
-        
         public string Title { get; set; }
-        
         public string Content { get; set; }
-        
         public DateTime PostingDateUtc { get; set; }
-        
         public List<Comment> Comments { get; set; }
-        
         public List<Like> Likes { get; set; }
-
         public Comment TryFindCommentById(Guid commentId)
         {
             return GetAllComments().FirstOrDefault(comment => comment.Id == commentId);

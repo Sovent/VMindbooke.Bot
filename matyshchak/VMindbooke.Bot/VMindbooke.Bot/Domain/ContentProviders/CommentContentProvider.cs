@@ -1,4 +1,5 @@
 ﻿using Bogus;
+using Usage.Domain.ValueObjects;
 
 namespace Usage.Domain.ContentProviders
 {

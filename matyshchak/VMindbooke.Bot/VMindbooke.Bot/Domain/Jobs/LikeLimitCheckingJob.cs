@@ -3,6 +3,7 @@ using Hangfire;
 using Serilog;
 using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
+using Usage.Domain.ValueObjects.LikeThresholds;
 
 namespace Usage.Domain.Jobs
 {

@@ -1,4 +1,4 @@
-﻿namespace Usage.Domain.Entities
+﻿namespace Usage.Domain.ValueObjects
 {
     public class UserCredentials
     {

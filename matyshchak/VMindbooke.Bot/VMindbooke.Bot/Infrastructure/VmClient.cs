@@ -9,6 +9,7 @@ using Serilog;
 using Usage.Domain;
 using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
+using Usage.Domain.ValueObjects;
 
 namespace Usage.Infrastructure
 {
