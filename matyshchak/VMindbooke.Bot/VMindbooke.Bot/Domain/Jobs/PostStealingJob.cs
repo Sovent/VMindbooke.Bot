@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Serilog;
 using Usage.Domain.ContentProviders;
-using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
 using Usage.Domain.ValueObjects.LikeThresholds;
 using Usage.Infrastructure;
@@ -39,20 +37,14 @@ namespace Usage.Domain.Jobs
 
         private void StealPostsContent()
         {
-            var posts = _client.GetAllPosts();
-            foreach (var post in posts)
+            var selectedPosts = _client.GetAllPosts()
+                .Where(post =>
+                    post.Likes.Count(like => like.PlacingDateUtc.Day == DateTime.Now.ToUniversalTime().Day)
+                    < _postLikesThreshold.Value &&
+                    !_stolenPostsIds.Contains(post.Id));
+            
+            foreach (var post in selectedPosts)
             {
-                var numberOfDailyLikes = post
-                    .Likes
-                    .Count(like => like.PlacingDateUtc.Day == DateTime.Now.ToUniversalTime().Day);
-                    
-                if (numberOfDailyLikes < _postLikesThreshold.Value)
-                    continue;
-                
-                if (_stolenPostsIds.Contains(post.Id))
-                    continue;
-
-                Log.Information($"Stole content from post with id {post.Id}");
                 _client.Post(_userCredentials.Id,
                     _userCredentials.Token,
                     new PostRequest(_postTitleProvider.GetPostTitle(),
@@ -83,7 +75,6 @@ namespace Usage.Domain.Jobs
                 if (_stolenPostsIds.Contains(postToSteal.Id))
                     continue;
 
-                Log.Information($"Stole best post of a user with name: {user.Name}, id: {postToSteal.Id}.");
                 _client.Post(_userCredentials.Id, _userCredentials.Token, new PostRequest(postToSteal.Title, postToSteal.Content));
                 _stolenPostsIds.Add(postToSteal.Id);
             }

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Serilog;
 using Usage.Domain.ContentProviders;
-using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
 using Usage.Domain.ValueObjects.LikeThresholds;
 
@@ -30,20 +28,14 @@ namespace Usage.Domain.Jobs
 
         public void Execute()
         {
-            var posts = _client.GetAllPosts();
-            foreach (var post in posts)
-            {
-                var numberOfDailyLikes = post
-                    .Likes
-                    .Count(like => like.PlacingDateUtc.Day == DateTime.Now.ToUniversalTime().Day);
-                    
-                if (numberOfDailyLikes < _likesThreshold.Value)
-                    continue;
-                
-                if (_commentedPostsIds.Contains(post.Id))
-                    continue;
+            var selectedPosts = _client.GetAllPosts()
+                .Where(post =>
+                    post.Likes.Count(like => like.PlacingDateUtc.Day == DateTime.Now.ToUniversalTime().Day)
+                    < _likesThreshold.Value &&
+                    !_commentedPostsIds.Contains(post.Id));
 
-                Log.Information($"Added comment to post with Id: {post.Id}.");
+            foreach (var post in selectedPosts)
+            {
                 _client.CommentPost(_userCredentials.Id, _userCredentials.Token, post.Id, _commentContentProvider.GetCommentContent());
                 _commentedPostsIds.Add(post.Id);
             }

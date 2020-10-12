@@ -28,7 +28,7 @@ namespace Usage.Domain.Jobs
             Log.Information("Removing boosting jobs");
             foreach (var jobId in _jobIds)
             {
-                BackgroundJob.Delete(jobId);
+                RecurringJob.RemoveIfExists(jobId);
             }
         }
     }

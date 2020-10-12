@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Serilog;
 using Usage.Domain.ContentProviders;
-using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
 using Usage.Domain.ValueObjects.LikeThresholds;
 
@@ -42,9 +40,7 @@ namespace Usage.Domain.Jobs
                         continue;
                     
                     if (_repliedCommentsIds.Contains(comment.Id))
-                    {
                         continue;
-                    }
 
                     _client.ReplyToComment(_userCredentials.Token,
                         post.Id,
