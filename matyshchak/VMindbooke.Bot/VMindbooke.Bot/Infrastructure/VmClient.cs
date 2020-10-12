@@ -5,6 +5,7 @@ using System.Net;
 using Newtonsoft.Json;
 using Polly;
 using RestSharp;
+using Serilog;
 using Usage.Domain;
 using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
@@ -14,7 +15,7 @@ namespace Usage.Infrastructure
     public class VmClient : IVmClient
     {
         private readonly RestClient _restClient;
-
+        
         public VmClient(string vmindbookeBaseUrl)
         {
             _restClient = new RestClient(vmindbookeBaseUrl);
@@ -22,12 +23,25 @@ namespace Usage.Infrastructure
 
         public User Register(UserName userName)
         {
+            var retryPolicy = Policy<IRestResponse>
+                .HandleResult(r => r.StatusCode == HttpStatusCode.InternalServerError)
+                .WaitAndRetry(new[]
+                {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(10),
+                    TimeSpan.FromSeconds(30)
+                },
+                    (result,
+                        span) => Log.Warning(
+                        $"{result.Exception.Message} while registering user with name {userName}."));
+            
             var request = new RestRequest($"users/", Method.POST);
             request.AddJsonBody(userName);
-            var response = _restClient.Execute(request);
+            var response = retryPolicy.Execute(() => _restClient.Execute(request));
             
-            var content = JsonConvert.DeserializeObject<User>(response.Content);
-            return content;
+            var user = JsonConvert.DeserializeObject<User>(response.Content);
+            Log.Information($"Successfully registered a user with id: {user.Id}");
+            return user;
         }
         
         public IReadOnlyCollection<User> GetAllUsers()
@@ -39,13 +53,17 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(10),
                     TimeSpan.FromSeconds(30)
-                }, (result, span) => Console.WriteLine());
+                },
+                    (result,
+                        span) => Log.Information(
+                        $"Failed to get posts. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
             
             var request = new RestRequest($"users", Method.GET);
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
             
-            var content = JsonConvert.DeserializeObject<User[]>(response.Content);
-            return content;
+            var users = JsonConvert.DeserializeObject<User[]>(response.Content);
+            Log.Information($"Successfully got all users");
+            return users;
         }
         
         public IReadOnlyCollection<User> GetUsers(int take, int skip = 0)
@@ -57,13 +75,15 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(10),
                     TimeSpan.FromSeconds(30)
-                }, (result, span) => Console.WriteLine());
+                }, (result, span) => Log.Warning($"Failed to get users. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
+
             
             var request = new RestRequest($"users/?take={take}&skip={skip}", Method.GET);
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
             
-            var content = JsonConvert.DeserializeObject<User[]>(response.Content);
-            return content;
+            var users = JsonConvert.DeserializeObject<User[]>(response.Content);
+            Log.Information($"Successfully got all users");
+            return users;
         }
         
         public User GetUser(int userId)
@@ -75,13 +95,17 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(10),
                     TimeSpan.FromSeconds(30)
-                }, (result, span) => Console.WriteLine());
-            
+                },
+                    (result,
+                        span) => Log.Warning(
+                        $"Failed to get user with id {userId}. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
+
             var request = new RestRequest($"users/{userId}", Method.GET);
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
             
-            var content = JsonConvert.DeserializeObject<User>(response.Content);
-            return content;
+            var user = JsonConvert.DeserializeObject<User>(response.Content);
+            Log.Information($"Successfully got user with id: {userId}");
+            return user;
         }
         
         public IReadOnlyCollection<Post> GetUserPosts(int userId)
@@ -93,12 +117,17 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(10),
                     TimeSpan.FromSeconds(30)
-                }, (result, span) => Console.WriteLine());
+                },
+                    (result,
+                        span) => Log.Warning(
+                        $"Failed to get posts. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
+
             
             var request = new RestRequest($"user/{userId}/posts", Method.GET);
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
             
             var posts = JsonConvert.DeserializeObject<Post[]>(response.Content);
+            Log.Information($"Successfully got posts of user with id: {userId}");
             return posts;
         }
         
@@ -111,12 +140,16 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(10),
                     TimeSpan.FromSeconds(30)
-                }, (result, span) => Console.WriteLine());
+                },
+                    (result,
+                        span) => Log.Warning(
+                        $"Failed to get posts. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
             
             var request = new RestRequest($"posts/", Method.GET);
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
             
             var posts = JsonConvert.DeserializeObject<Post[]>(response.Content);
+            Log.Information($"Successfully got all posts");
             return posts;
         }
         
@@ -134,7 +167,8 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(10),
                     TimeSpan.FromSeconds(30)
-                }, (result, span) => Console.WriteLine());
+                }, (result, span) => Log.Warning(
+                    $"Failed to get posts. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
             
             var request = new RestRequest($"posts/?take={take}&skip={skip}", Method.GET);
             var response = retryPolicy.Execute(() => _restClient.Execute(request));
@@ -153,14 +187,16 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(3),
                     TimeSpan.FromSeconds(5),
                     TimeSpan.FromSeconds(10)
-                }, (result, span) => Console.WriteLine());
+                }, (result, span) => Log.Warning(
+                    $"Failed to add a new post. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
 
             var request = new RestRequest($"users/{userId}/posts", Method.POST);
             request.AddHeader("Authorization", userToken);
             request.AddJsonBody(postRequest);
 
-            var response = retryPolicy.Execute(() => _restClient.Execute(request));
+            var response = retryPolicy.Execute(() => _restClient.Execute<int>(request));
             var content = JsonConvert.DeserializeObject<int>(response.Content);
+            Log.Information($"Successfully added new post with id: {content}.");
             return content;
         }
 
@@ -174,13 +210,17 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(3),
                     TimeSpan.FromSeconds(5),
                     TimeSpan.FromSeconds(10)
-                }, (result, span) => Console.WriteLine());
+                },
+                    (result,
+                        span) => Log.Warning(
+                        $"Failed to comment post with id: {postId}. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
             
             var request = new RestRequest($"/posts/{postId}/comments", Method.POST);
             request.AddHeader("Authorization", userToken);
             request.AddJsonBody(comment);
 
-            var response = retryPolicy.Execute(() => _restClient.Execute(request));
+            retryPolicy.Execute(() => _restClient.Execute(request));
+            Log.Information($"Successfully commented post with id: {postId}.");
         }
         
         public void ReplyToComment(string userToken, int postId, Guid commentId, CommentContent reply)
@@ -193,13 +233,17 @@ namespace Usage.Infrastructure
                     TimeSpan.FromSeconds(3),
                     TimeSpan.FromSeconds(5),
                     TimeSpan.FromSeconds(10)
-                }, (result, span) => Console.WriteLine());
+                },
+                    (result,
+                        span) => Log.Warning(
+                        $"Failed to reply to comment with id: {commentId}. HttpStatusCode: {HttpStatusCode.InternalServerError}"));
             
             var request = new RestRequest($"/posts/{postId}/comments/{commentId}/replies", Method.POST);
             request.AddHeader("Authorization", userToken);
             request.AddJsonBody(reply);
 
-            var response = retryPolicy.Execute(() => _restClient.Execute(request));
+            retryPolicy.Execute(() => _restClient.Execute(request));
+            Log.Information($"Successfully replied to comment with id: {commentId}.");
         }
         
     }

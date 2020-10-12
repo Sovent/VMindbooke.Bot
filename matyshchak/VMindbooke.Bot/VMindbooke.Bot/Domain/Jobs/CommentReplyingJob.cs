@@ -29,7 +29,6 @@ namespace Usage.Domain.Jobs
         
         public void Execute()
         {
-            Log.Information("Executing CommentReplyingJob.");
             var posts = _client.GetAllPosts();
             foreach (var post in posts)
             {
@@ -43,11 +42,9 @@ namespace Usage.Domain.Jobs
                     
                     if (_repliedCommentsIds.Contains(comment.Id))
                     {
-                        Log.Information($"Comment with Id: {comment.Id} is already replied.");
                         continue;
                     }
 
-                    Log.Information($"Adding reply to comment with Id: {comment.Id}.");
                     _client.ReplyToComment(_userCredentials.Token,
                         post.Id,
                         comment.Id,

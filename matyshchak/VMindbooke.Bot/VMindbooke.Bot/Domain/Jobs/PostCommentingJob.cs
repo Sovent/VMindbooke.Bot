@@ -29,7 +29,6 @@ namespace Usage.Domain.Jobs
 
         public void Execute()
         {
-            Log.Information("Executing PostCommentingJob");
             var posts = _client.GetAllPosts();
             foreach (var post in posts)
             {
@@ -41,10 +40,7 @@ namespace Usage.Domain.Jobs
                     continue;
                 
                 if (_commentedPostsIds.Contains(post.Id))
-                {
-                    Log.Information($"Post with Id: {post.Id} is already commented.");
                     continue;
-                }
 
                 Log.Information($"Added comment to post with Id: {post.Id}.");
                 _client.CommentPost(_userCredentials.Id, _userCredentials.Token, post.Id, _commentContentProvider.GetCommentContent());

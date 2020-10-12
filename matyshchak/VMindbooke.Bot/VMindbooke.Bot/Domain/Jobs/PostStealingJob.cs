@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Serilog;
 using Usage.Domain.ContentProviders;
 using Usage.Domain.Entities;
 using Usage.Domain.ValueObjects;
@@ -47,12 +48,9 @@ namespace Usage.Domain.Jobs
                     continue;
                 
                 if (_stolenPostsIds.Contains(post.Id))
-                {
-                    Console.WriteLine($"post {post.Id} is already stolen");
                     continue;
-                }
 
-                Console.WriteLine($"Stole post with id {post.Id}");
+                Log.Information($"Stole content from post with id {post.Id}");
                 _client.Post(_userCredentials.Id,
                     _userCredentials.Token,
                     new PostRequest(_postTitleProvider.GetPostTitle(),
@@ -81,12 +79,9 @@ namespace Usage.Domain.Jobs
                     .First();
                 
                 if (_stolenPostsIds.Contains(postToSteal.Id))
-                {
-                    Console.WriteLine($"post {postToSteal.Id} is already stolen");
                     continue;
-                }
 
-                Console.WriteLine($"Stole best post of user {user.Name} with id {postToSteal.Id}");
+                Log.Information($"Stole best post of a user with name: {user.Name}, id: {postToSteal.Id}.");
                 _client.Post(_userCredentials.Id, _userCredentials.Token, new PostRequest(postToSteal.Title, postToSteal.Content));
                 _stolenPostsIds.Add(postToSteal.Id);
             }

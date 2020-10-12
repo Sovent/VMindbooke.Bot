@@ -32,10 +32,8 @@ namespace Usage.Domain.Jobs
 
         public void Execute()
         {
-            Log.Information("Executing LikeLimitCheckingJob");
             if (IsLimitExceeded())
             {
-                Log.Information("Daily like limit is exceeded.");
                 _boostingJobsContainer.StopJobs();
                 var delay = DateTime.Today.AddDays(1) - DateTime.Now;
                 Log.Information($"Scheduling next boosting jobs start with delay: {delay}");
