@@ -27,7 +27,7 @@ namespace Usage
                 .WriteTo.File("regular.log", restrictedToMinimumLevel: LogEventLevel.Information)
                 .WriteTo.Console()
                 .CreateLogger();
-
+            
             try
             {
                 var client = new VmClient(configuration["VMindbookeUrl"]);
@@ -42,12 +42,13 @@ namespace Usage
                 RegisterThresholds(builder, configuration);
                 CreateBoostingJobs(builder);
                 var container = builder.Build();
+                
+                GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(container));
+                GlobalConfiguration.Configuration.UseMemoryStorage();
 
                 var jobsContainer = container.Resolve<BoostingJobsContainer>();
                 jobsContainer.StartJobs();
-
-                GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(container));
-                GlobalConfiguration.Configuration.UseMemoryStorage();
+                
                 using var backgroundJobServer = new BackgroundJobServer();
                 Log.Information("Background service started");
                 Console.ReadKey();

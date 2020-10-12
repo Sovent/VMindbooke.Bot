@@ -194,10 +194,10 @@ namespace Usage.Infrastructure
             request.AddHeader("Authorization", userToken);
             request.AddJsonBody(postRequest);
 
-            var response = retryPolicy.Execute(() => _restClient.Execute<int>(request));
-            var content = JsonConvert.DeserializeObject<int>(response.Content);
-            Log.Information($"Successfully added new post with id: {content}.");
-            return content;
+            var response = retryPolicy.Execute(() => _restClient.Execute(request));
+            var postId = int.Parse(response.Content);
+            Log.Information($"Successfully added new post with id: {postId}.");
+            return postId;
         }
 
         public void CommentPost(int userId, string userToken, int postId, CommentContent comment)
