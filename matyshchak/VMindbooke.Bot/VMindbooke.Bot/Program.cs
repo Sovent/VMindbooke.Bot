@@ -78,7 +78,7 @@ namespace Usage
             CreateJob<PostCommentingJob>();
             CreateJob<CommentReplyingJob>();
             CreateJob<PostStealingJob>();
-            //CreateJob<LikeLimitCheckingJob>();
+            CreateJob<LikeLimitCheckingJob>();
 
             container.RegisterInstance(jobsContainer).SingleInstance();
         }

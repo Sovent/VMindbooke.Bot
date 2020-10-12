@@ -4,8 +4,15 @@ namespace Usage.Domain.Entities
 {
     public class Like
     {
-        public Guid Id { get; set; }
-        public int AuthorId { get; set; }
-        public DateTime PlacingDateUtc { get; set; }
+        public Like(Guid id, int authorId, DateTime placingDateUtc)
+        {
+            Id = id;
+            AuthorId = authorId;
+            PlacingDateUtc = placingDateUtc;
+        }
+        
+        public Guid Id { get; }
+        public int AuthorId { get; }
+        public DateTime PlacingDateUtc { get; }
     }
 }

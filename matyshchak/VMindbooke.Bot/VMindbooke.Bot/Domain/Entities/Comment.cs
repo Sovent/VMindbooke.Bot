@@ -6,31 +6,26 @@ namespace Usage.Domain.Entities
 {
     public class Comment
     {
-        public Guid Id { get; set; }
-        public int AuthorId { get; set; }
-        public string Content { get; set; }
-        public DateTime PostingDateUtc { get; set; }
-        public List<Comment> Replies { get; set; }
-        public List<Like> Likes { get; set; }
-        public IEnumerable<Comment> GetAllReplies()
+        public Comment(Guid id,
+            int authorId,
+            string content,
+            DateTime postingDateUtc,
+            List<Comment> replies,
+            List<Like> likes)
         {
-            return Replies.Concat(Replies.SelectMany(r => r.GetAllReplies()));
+            Id = id;
+            AuthorId = authorId;
+            Content = content;
+            PostingDateUtc = postingDateUtc;
+            Replies = replies;
+            Likes = likes;
         }
         
-        public void Reply(int replyAuthorId, string replyMessage)
-        {
-            lock (Replies)
-            {
-                Replies.Add(new Comment()
-                {
-                    Id = Guid.NewGuid(),
-                    Content = replyMessage,
-                    AuthorId = replyAuthorId,
-                    PostingDateUtc = DateTime.UtcNow,
-                    Likes = new List<Like>(),
-                    Replies = new List<Comment>()
-                });
-            }
-        }
+        public Guid Id { get; }
+        public int AuthorId { get; }
+        public string Content { get; }
+        public DateTime PostingDateUtc { get; }
+        public List<Comment> Replies { get; }
+        public List<Like> Likes { get; }
     }
 }
