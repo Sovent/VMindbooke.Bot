@@ -1,4 +1,4 @@
-namespace Usage.Infrastructure
+namespace Usage.Domain
 {
     public class PostRequest
     {

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using Autofac;
 using Hangfire;
 using Hangfire.MemoryStorage;
@@ -54,8 +53,6 @@ namespace Usage
                 jobsContainer.StartJobs();
                 using var backgroundJobServer = new BackgroundJobServer();
                 Log.Information("Background service started");
-                Thread.Sleep(TimeSpan.FromMinutes(1));
-                //jobsContainer.StopJobs();
                 Console.ReadKey();
             }
             catch (Exception exception)
