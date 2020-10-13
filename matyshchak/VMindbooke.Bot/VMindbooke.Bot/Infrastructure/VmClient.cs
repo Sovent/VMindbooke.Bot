@@ -18,10 +18,10 @@ namespace Usage.Infrastructure
         private readonly ILogger _logger;
         private readonly Policy<IRestResponse> _retryPolicy;
         
-        public VmClient(string vmindbookeBaseUrl, ILogger logger)
+        public VmClient(VmClientUrl vmindbookeBaseUrl, ILogger logger)
         {
             _logger = logger;
-            _restClient = new RestClient(vmindbookeBaseUrl);
+            _restClient = new RestClient(vmindbookeBaseUrl.Value);
             _retryPolicy = CreatePolicyForInternalServerError();
         }
 

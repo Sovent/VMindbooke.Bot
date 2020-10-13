@@ -23,7 +23,7 @@ namespace Usage
                 .AddJsonFile("appsettings.json")
                 .Build();
 
-            Log.Logger = new LoggerConfiguration()
+            var logger = new LoggerConfiguration()
                 .WriteTo.File("regular.log", restrictedToMinimumLevel: LogEventLevel.Information)
                 .WriteTo.Console()
                 .CreateLogger();
@@ -31,21 +31,19 @@ namespace Usage
             try
             {
                 var builder = new ContainerBuilder();
-                builder.RegisterType<Logger>().As<ILogger>();
+                builder.RegisterInstance(logger).As<ILogger>().SingleInstance();
+                builder.RegisterInstance(new VmClientUrl(configuration["VMindbookeUrl"])).SingleInstance();
                 builder.RegisterType<VmClient>().As<IVmClient>().SingleInstance();
                 builder.RegisterType<CommentContentProvider>().As<ICommentContentProvider>().SingleInstance();
                 builder.RegisterType<PostTitleProvider>().As<IPostTitleProvider>().SingleInstance();
                 RegisterThresholds(builder, configuration);
                 CreateBoostingJobs(builder);
-                var container = builder.Build();
-                
-                var client = container.Resolve<IVmClient>();
-                var userToBoost = client.Register(new UserName("Stepan M"));
-                builder.Register(c => new UserCredentials(userToBoost.Id, userToBoost.Token))
-                    .As<UserCredentials>()
+                builder.Register(c =>
+                        new UserCredentials(configuration.GetValue<int>("UserToBoostId"),
+                            configuration["UserToBoostToken"]))
                     .SingleInstance();
+                var container = builder.Build();
 
-                container = builder.Build();
                 GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(container));
                 GlobalConfiguration.Configuration.UseMemoryStorage();
 
