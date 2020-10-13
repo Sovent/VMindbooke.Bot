@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
 using Polly;
-using Polly.Retry;
 using RestSharp;
 using Serilog;
 using Usage.Domain;
@@ -23,10 +22,10 @@ namespace Usage.Infrastructure
         {
             _logger = logger;
             _restClient = new RestClient(vmindbookeBaseUrl);
-            _retryPolicy = CreatePolicy();
+            _retryPolicy = CreatePolicyForInternalServerError();
         }
 
-        private Policy<IRestResponse> CreatePolicy()
+        private Policy<IRestResponse> CreatePolicyForInternalServerError()
         {
             return Policy<IRestResponse>
                 .HandleResult(r => r.StatusCode == HttpStatusCode.InternalServerError)
