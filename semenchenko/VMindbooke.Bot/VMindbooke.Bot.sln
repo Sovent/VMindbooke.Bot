@@ -1,0 +1,22 @@
+﻿﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMindbooke.Bot", "VMindbooke.Bot\VMindbooke.Bot.csproj", "{824847AA-377C-4B17-BFE5-650A0FE86F13}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Usage", "Usage\Usage.csproj", "{0C638F1A-A7FB-4464-ADD8-5FDAB3DA003E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{824847AA-377C-4B17-BFE5-650A0FE86F13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{824847AA-377C-4B17-BFE5-650A0FE86F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{824847AA-377C-4B17-BFE5-650A0FE86F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{824847AA-377C-4B17-BFE5-650A0FE86F13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C638F1A-A7FB-4464-ADD8-5FDAB3DA003E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C638F1A-A7FB-4464-ADD8-5FDAB3DA003E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C638F1A-A7FB-4464-ADD8-5FDAB3DA003E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C638F1A-A7FB-4464-ADD8-5FDAB3DA003E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
