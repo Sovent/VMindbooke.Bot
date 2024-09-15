@@ -1,0 +1,36 @@
+name: master
+
+on:
+    push:
+        branches:
+            - master
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        name: Publish package
+
+        steps:
+        - name: checkout
+          uses: actions/checkout@v1
+
+        - name: Setup .NET Core
+          uses: actions/setup-dotnet@v1
+          with:
+            dotnet-version: '3.1.x'
+
+        - name: Build
+          run: dotnet build --configuration Release
+          working-directory: ./Mindbox.SDK
+
+        - name: Run unit tests
+          run: dotnet test --configuration Release
+          working-directory: ./Mindbox.SDK
+
+        - name: Publish to nuget
+          uses: rohith/publish-nuget@v2
+          with:
+            PROJECT_FILE_PATH: Mindbox.SDK/Mindbox.SDK/Mindbox.SDK.csproj
+            NUGET_KEY: ${{secrets.MINDBOX_PRIVATE_NUGET_AUTH_TOKEN}}
+            NUGET_SOURCE: https://www.myget.org/F/mindbox-private/auth/30bac00a-124d-42b7-9efd-482125bb1c5e/api
+            INCLUDE_SYMBOLS: true
